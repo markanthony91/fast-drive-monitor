@@ -522,6 +522,17 @@ await app.stop();          // Finalizar
 
 ## Changelog
 
+### [1.0.1] - 2026-01-14
+
+#### Adicionado
+- Documentação: Guia completo do GitHub CLI (`docs/GITHUB_CLI_GUIDE.md`)
+- Repositório renomeado para `fast-drive-monitor`
+
+#### Alterado
+- Estrutura de pastas: criada pasta `docs/` para documentação adicional
+
+---
+
 ### [1.0.0] - 2026-01-14
 
 #### Adicionado
