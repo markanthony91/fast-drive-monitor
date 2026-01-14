@@ -1,11 +1,13 @@
 {
   "name": "fast-drive",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Monitor de headset Jabra Engage 55 Mono - Bateria, Status e Estatísticas",
   "main": "main.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
+    "start": "node src/api/server.js",
+    "start:cli": "node src/index.js",
+    "dev": "node --watch src/api/server.js",
+    "dev:cli": "node --watch src/index.js",
     "electron": "electron .",
     "electron:dev": "NODE_ENV=development electron .",
     "build": "electron-builder",
@@ -30,7 +32,9 @@
     "@gnaudio/jabra-node-sdk": "^3.6.2",
     "better-sqlite3": "^9.4.3",
     "electron-store": "^8.1.0",
-    "rxjs": "^7.8.1"
+    "express": "^4.18.2",
+    "rxjs": "^7.8.1",
+    "ws": "^8.16.0"
   },
   "devDependencies": {
     "electron": "^28.2.0",
@@ -44,6 +48,7 @@
     },
     "files": [
       "src/**/*",
+      "public/**/*",
       "main.js",
       "preload.js",
       "index.html",

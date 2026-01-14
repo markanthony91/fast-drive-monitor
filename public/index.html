@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fast Drive Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="logo">Fast Drive</h1>
+        <span class="subtitle">Headset Monitor</span>
+      </div>
+      <div class="header-right">
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Conectando...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Dongles Section -->
+      <section class="section dongles-section">
+        <div class="section-header">
+          <h2>Dongles</h2>
+          <span class="badge" id="dongleCount">0</span>
+        </div>
+        <div class="dongles-grid" id="donglesGrid">
+          <div class="empty-state" id="noDongles">
+            <span class="empty-icon">&#128268;</span>
+            <p>Nenhum dongle conectado</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Active Headsets Section -->
+      <section class="section headsets-section">
+        <div class="section-header">
+          <h2>Headsets Ativos</h2>
+          <span class="badge" id="activeCount">0</span>
+        </div>
+        <div class="headsets-grid" id="activeHeadsetsGrid">
+          <div class="empty-state" id="noActiveHeadsets">
+            <span class="empty-icon">&#127911;</span>
+            <p>Nenhum headset ligado</p>
+            <small>Ligue seu headset para visualizar</small>
+          </div>
+        </div>
+      </section>
+
+      <!-- Registered Headsets Section -->
+      <section class="section registered-section">
+        <div class="section-header">
+          <h2>Headsets Registrados</h2>
+          <button class="btn btn-primary" id="addHeadsetBtn">
+            <span>+</span> Adicionar
+          </button>
+        </div>
+        <div class="headsets-list" id="registeredHeadsetsList">
+          <div class="empty-state" id="noRegisteredHeadsets">
+            <p>Nenhum headset registrado</p>
+            <small>Clique em "Adicionar" para registrar um headset</small>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modal: Add/Edit Headset -->
+    <div class="modal" id="headsetModal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle">Adicionar Headset</h3>
+          <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+        <form id="headsetForm">
+          <input type="hidden" id="headsetId">
+
+          <div class="form-group">
+            <label for="headsetName">Nome</label>
+            <input type="text" id="headsetName" placeholder="Ex: Headset Marcelo" required>
+          </div>
+
+          <div class="form-group">
+            <label for="headsetNumber">Numero</label>
+            <input type="number" id="headsetNumber" min="1" max="999" placeholder="Ex: 1">
+          </div>
+
+          <div class="form-group">
+            <label>Cor</label>
+            <div class="color-picker" id="colorPicker">
+              <button type="button" class="color-option" data-color="blue" style="--color: #3B82F6"></button>
+              <button type="button" class="color-option" data-color="yellow" style="--color: #EAB308"></button>
+              <button type="button" class="color-option" data-color="green" style="--color: #22C55E"></button>
+              <button type="button" class="color-option" data-color="red" style="--color: #EF4444"></button>
+              <button type="button" class="color-option" data-color="white" style="--color: #F8FAFC"></button>
+            </div>
+            <input type="hidden" id="headsetColor" value="blue">
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="cancelBtn">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Salvar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Confirm Delete -->
+    <div class="modal" id="deleteModal">
+      <div class="modal-overlay"></div>
+      <div class="modal-content modal-small">
+        <div class="modal-header">
+          <h3>Remover Headset</h3>
+          <button class="modal-close" id="deleteModalClose">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Tem certeza que deseja remover <strong id="deleteHeadsetName"></strong>?</p>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="deleteCancelBtn">Cancelar</button>
+          <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Remover</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

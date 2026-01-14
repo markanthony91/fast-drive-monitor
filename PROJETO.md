@@ -522,6 +522,42 @@ await app.stop();          // Finalizar
 
 ## Changelog
 
+### [2.0.0] - 2026-01-14
+
+#### Adicionado
+- **Frontend Web Minimalista** (`public/`)
+  - Interface responsiva com design dark mode
+  - Visualização de dongles conectados (indicador verde)
+  - Cards de headsets ativos com bateria, status de chamada e mudo
+  - Lista de headsets registrados com status online/offline
+  - Modal para adicionar/editar headsets
+  - Sistema de cores para headsets (azul, amarelo, verde, vermelho, branco)
+  - Numeração de headsets
+  - Headsets aparecem quando ligados, desaparecem quando desligados
+
+- **API REST Backend** (`src/api/server.js`)
+  - Endpoints para gerenciar headsets
+  - WebSocket para atualizações em tempo real
+  - Integração com JabraService e BatteryTracker
+
+- **Gerenciador de Headsets** (`src/headsetManager.js`)
+  - Persistência de configurações em SQLite
+  - Gerenciamento de múltiplos headsets
+  - Rastreamento de dongles conectados
+  - Sistema de cores e numeração
+
+#### Alterado
+- `npm start` agora inicia o servidor web (porta 3000)
+- `npm start:cli` para modo CLI antigo
+- Electron agora carrega interface via servidor local
+
+#### Novos Scripts
+- `npm start` - Servidor web com frontend
+- `npm start:cli` - Modo CLI (terminal)
+- `npm dev` - Servidor com hot-reload
+
+---
+
 ### [1.0.2] - 2026-01-14
 
 #### Corrigido
