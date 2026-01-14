@@ -4,17 +4,19 @@
   "description": "Monitor de headset Jabra Engage 55 Mono - Bateria, Status e Estatísticas",
   "main": "main.js",
   "scripts": {
-    "start": "node src/api/server.js",
-    "start:cli": "node src/index.js",
-    "dev": "node --watch src/api/server.js",
-    "dev:cli": "node --watch src/index.js",
-    "electron": "electron .",
-    "electron:dev": "NODE_ENV=development electron .",
-    "build": "electron-builder",
-    "build:linux": "electron-builder --linux",
-    "build:win": "electron-builder --win",
-    "build:all": "electron-builder --linux --win",
-    "test": "node --test src/**/*.test.js"
+    "rebuild:node": "npm rebuild better-sqlite3",
+    "rebuild:electron": "ver=$(electron --version); ver=${ver#v}; npx @electron/rebuild -o better-sqlite3 -v $ver",
+    "start": "npm run rebuild:node && node src/api/server.js",
+    "start:cli": "npm run rebuild:node && node src/index.js",
+    "dev": "npm run rebuild:node && node --watch src/api/server.js",
+    "dev:cli": "npm run rebuild:node && node --watch src/index.js",
+    "electron": "npm run rebuild:electron && electron .",
+    "electron:dev": "npm run rebuild:electron && NODE_ENV=development electron .",
+    "build": "npm run rebuild:electron && electron-builder",
+    "build:linux": "npm run rebuild:electron && electron-builder --linux",
+    "build:win": "npm run rebuild:electron && electron-builder --win",
+    "build:all": "npm run rebuild:electron && electron-builder --linux --win",
+    "test": "npm run rebuild:node && node --test src/**/*.test.js"
   },
   "keywords": [
     "jabra",
@@ -37,6 +39,7 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.0.2",
     "electron": "^28.2.0",
     "electron-builder": "^24.9.1"
   },
