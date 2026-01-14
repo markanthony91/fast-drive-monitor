@@ -1,0 +1,75 @@
+{
+  "name": "fast-drive",
+  "version": "1.0.0",
+  "description": "Monitor de headset Jabra Engage 55 Mono - Bateria, Status e Estatísticas",
+  "main": "main.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "electron": "electron .",
+    "electron:dev": "NODE_ENV=development electron .",
+    "build": "electron-builder",
+    "build:linux": "electron-builder --linux",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --linux --win",
+    "test": "node --test src/**/*.test.js"
+  },
+  "keywords": [
+    "jabra",
+    "headset",
+    "engage-55",
+    "battery",
+    "monitor",
+    "electron"
+  ],
+  "author": "Fast Drive Team",
+  "license": "MIT",
+  "dependencies": {
+    "@gnaudio/jabra-js": "^4.4.1",
+    "@gnaudio/jabra-js-properties": "^1.0.3",
+    "@gnaudio/jabra-node-sdk": "^3.6.2",
+    "better-sqlite3": "^9.4.3",
+    "electron-store": "^8.1.0",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "electron": "^28.2.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.fastdrive.jabra-monitor",
+    "productName": "Fast Drive - Jabra Monitor",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "main.js",
+      "preload.js",
+      "index.html",
+      "assets/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Utility"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

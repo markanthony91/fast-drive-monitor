@@ -1,0 +1,19 @@
+# Regras udev para dispositivos Jabra
+# Instalar em: /etc/udev/rules.d/99-jabra.rules
+# Depois executar: sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# Jabra/GN Audio devices (Vendor ID: 0x0B0E)
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", MODE="0666", GROUP="plugdev"
+SUBSYSTEM=="usb_device", ATTR{idVendor}=="0b0e", MODE="0666", GROUP="plugdev"
+
+# Jabra Engage 55 Mono
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", ATTR{idProduct}=="0a72", MODE="0666", GROUP="plugdev"
+
+# Jabra Engage 55 Stereo
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", ATTR{idProduct}=="0a73", MODE="0666", GROUP="plugdev"
+
+# Jabra Engage 55 Base/Dongle
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", ATTR{idProduct}=="0a74", MODE="0666", GROUP="plugdev"
+
+# HID devices para controle de chamadas
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b0e", MODE="0666", GROUP="plugdev"
