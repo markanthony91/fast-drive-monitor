@@ -522,6 +522,18 @@ await app.stop();          // Finalizar
 
 ## Changelog
 
+### [1.0.2] - 2026-01-14
+
+#### Corrigido
+- Configuração Nix: Alterado de Python 3.13 para Python 3.11
+- Resolução do erro `ModuleNotFoundError: No module named 'distutils'`
+- O `node-gyp` (usado pelo `@gnaudio/jabra-node-sdk`) requer `distutils` que foi removido no Python 3.12+
+
+#### Nota técnica
+Python 3.12+ removeu o módulo `distutils` da biblioteca padrão. O `node-gyp` v8.4.1 ainda depende dele. Solução: usar Python 3.11 no ambiente Nix.
+
+---
+
 ### [1.0.1] - 2026-01-14
 
 #### Adicionado

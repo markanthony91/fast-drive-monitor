@@ -20,9 +20,11 @@ pkgs.mkShell {
 
     # Build tools
     pkg-config
-    python3
+    python311  # Python 3.11 ainda tem distutils (necessário para node-gyp)
+    python311Packages.setuptools
     gnumake
     gcc
+    nodePackages.node-gyp
 
     # Debug tools
     usbutils
