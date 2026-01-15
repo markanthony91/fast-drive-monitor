@@ -12,6 +12,7 @@ const { EventEmitter } = require('events');
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 // Configurações padrão do Jabra Engage 55 Mono
 const DEFAULT_SPECS = {
@@ -38,6 +39,7 @@ class BatteryTracker extends EventEmitter {
     this.options = {
       dataDir: options.dataDir || path.join(process.cwd(), 'data'),
       saveInterval: options.saveInterval || 60000, // Salvar a cada minuto
+      hostname: options.hostname || os.hostname(),
       ...DEFAULT_SPECS
     };
 
@@ -117,6 +119,7 @@ class BatteryTracker extends EventEmitter {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS charging_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostname TEXT NOT NULL DEFAULT '',
         start_time INTEGER NOT NULL,
         end_time INTEGER,
         start_level INTEGER NOT NULL,
@@ -131,6 +134,7 @@ class BatteryTracker extends EventEmitter {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS usage_sessions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostname TEXT NOT NULL DEFAULT '',
         start_time INTEGER NOT NULL,
         end_time INTEGER,
         start_level INTEGER NOT NULL,
@@ -145,6 +149,7 @@ class BatteryTracker extends EventEmitter {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS battery_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        hostname TEXT NOT NULL DEFAULT '',
         timestamp INTEGER NOT NULL,
         battery_level INTEGER NOT NULL,
         is_charging INTEGER NOT NULL,
@@ -157,10 +162,36 @@ class BatteryTracker extends EventEmitter {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS stats (
         key TEXT PRIMARY KEY,
+        hostname TEXT NOT NULL DEFAULT '',
         value TEXT NOT NULL,
         updated_at INTEGER NOT NULL
       )
     `);
+
+    // Migração: adicionar coluna hostname se não existir (para bancos existentes)
+    this._migrateAddHostname();
+  }
+
+  /**
+   * Migração para adicionar coluna hostname em tabelas existentes
+   */
+  _migrateAddHostname() {
+    const tables = ['charging_sessions', 'usage_sessions', 'battery_history', 'stats'];
+
+    for (const table of tables) {
+      try {
+        // Verificar se coluna existe
+        const columns = this.db.prepare(`PRAGMA table_info(${table})`).all();
+        const hasHostname = columns.some(col => col.name === 'hostname');
+
+        if (!hasHostname) {
+          this.db.exec(`ALTER TABLE ${table} ADD COLUMN hostname TEXT NOT NULL DEFAULT ''`);
+          console.log(`[BatteryTracker] Migração: coluna hostname adicionada em ${table}`);
+        }
+      } catch (error) {
+        // Ignorar erros de migração (coluna pode já existir)
+      }
+    }
   }
 
   /**
@@ -196,13 +227,13 @@ class BatteryTracker extends EventEmitter {
    */
   _saveStats() {
     const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO stats (key, value, updated_at)
-      VALUES (?, ?, ?)
+      INSERT OR REPLACE INTO stats (key, hostname, value, updated_at)
+      VALUES (?, ?, ?, ?)
     `);
 
     const now = Date.now();
     Object.entries(this.stats).forEach(([key, value]) => {
-      stmt.run(key, JSON.stringify(value), now);
+      stmt.run(key, this.options.hostname, JSON.stringify(value), now);
     });
   }
 
@@ -262,10 +293,10 @@ class BatteryTracker extends EventEmitter {
 
     // Salvar no banco de dados
     const stmt = this.db.prepare(`
-      INSERT INTO battery_history (timestamp, battery_level, is_charging, is_in_call, is_muted)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO battery_history (hostname, timestamp, battery_level, is_charging, is_in_call, is_muted)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    stmt.run(point.timestamp, level, isCharging ? 1 : 0,
+    stmt.run(this.options.hostname, point.timestamp, level, isCharging ? 1 : 0,
       point.isInCall ? 1 : 0, point.isMuted ? 1 : 0);
   }
 
@@ -289,10 +320,10 @@ class BatteryTracker extends EventEmitter {
 
     // Salvar no banco de dados
     const stmt = this.db.prepare(`
-      INSERT INTO charging_sessions (start_time, start_level)
-      VALUES (?, ?)
+      INSERT INTO charging_sessions (hostname, start_time, start_level)
+      VALUES (?, ?, ?)
     `);
-    const result = stmt.run(this.chargingSession.startTime, startLevel);
+    const result = stmt.run(this.options.hostname, this.chargingSession.startTime, startLevel);
     this.chargingSession.id = result.lastInsertRowid;
 
     console.log(`[BatteryTracker] Carregamento iniciado: ${startLevel}%`);
@@ -356,10 +387,10 @@ class BatteryTracker extends EventEmitter {
 
     // Salvar no banco de dados
     const stmt = this.db.prepare(`
-      INSERT INTO usage_sessions (start_time, start_level)
-      VALUES (?, ?)
+      INSERT INTO usage_sessions (hostname, start_time, start_level)
+      VALUES (?, ?, ?)
     `);
-    const result = stmt.run(this.usageSession.startTime, startLevel);
+    const result = stmt.run(this.options.hostname, this.usageSession.startTime, startLevel);
     this.usageSession.id = result.lastInsertRowid;
 
     console.log(`[BatteryTracker] Sessão de uso iniciada: ${startLevel}%`);

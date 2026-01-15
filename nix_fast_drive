@@ -23,7 +23,7 @@
             nodePackages.yarn
 
             # Electron dependencies (Pinning to 33 for stability)
-            electron_33
+            electron
 
             # USB/HID dependencies para comunicação com headset
             libusb1
@@ -97,7 +97,7 @@
 
           # Variáveis de ambiente para Electron
           ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
-          ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron_33}/bin";
+          ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron}/bin";
         };
 
         packages.default = pkgs.buildNpmPackage {

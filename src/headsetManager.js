@@ -9,6 +9,7 @@ const { EventEmitter } = require('events');
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 
 // Cores disponíveis para headsets
 const HEADSET_COLORS = {
@@ -25,6 +26,7 @@ class HeadsetManager extends EventEmitter {
 
     this.options = {
       dataDir: options.dataDir || path.join(process.cwd(), 'data'),
+      hostname: options.hostname || os.hostname(),
       ...options
     };
 
@@ -73,6 +75,7 @@ class HeadsetManager extends EventEmitter {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS headsets (
         id TEXT PRIMARY KEY,
+        hostname TEXT NOT NULL DEFAULT '',
         serial_number TEXT UNIQUE,
         name TEXT NOT NULL,
         model TEXT,
@@ -87,6 +90,7 @@ class HeadsetManager extends EventEmitter {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS dongles (
         id TEXT PRIMARY KEY,
+        hostname TEXT NOT NULL DEFAULT '',
         headset_id TEXT,
         name TEXT,
         connected INTEGER DEFAULT 0,
@@ -94,6 +98,30 @@ class HeadsetManager extends EventEmitter {
         FOREIGN KEY (headset_id) REFERENCES headsets(id)
       )
     `);
+
+    // Migração: adicionar coluna hostname se não existir
+    this._migrateAddHostname();
+  }
+
+  /**
+   * Migração para adicionar coluna hostname em tabelas existentes
+   */
+  _migrateAddHostname() {
+    const tables = ['headsets', 'dongles'];
+
+    for (const table of tables) {
+      try {
+        const columns = this.db.prepare(`PRAGMA table_info(${table})`).all();
+        const hasHostname = columns.some(col => col.name === 'hostname');
+
+        if (!hasHostname) {
+          this.db.exec(`ALTER TABLE ${table} ADD COLUMN hostname TEXT NOT NULL DEFAULT ''`);
+          console.log(`[HeadsetManager] Migração: coluna hostname adicionada em ${table}`);
+        }
+      } catch (error) {
+        // Ignorar erros de migração
+      }
+    }
   }
 
   /**
@@ -106,6 +134,7 @@ class HeadsetManager extends EventEmitter {
     rows.forEach(row => {
       this.registeredHeadsets.set(row.id, {
         id: row.id,
+        hostname: row.hostname || this.options.hostname,
         serialNumber: row.serial_number,
         name: row.name,
         model: row.model,
@@ -135,6 +164,7 @@ class HeadsetManager extends EventEmitter {
 
     const headset = {
       id,
+      hostname: this.options.hostname,
       serialNumber: headsetData.serialNumber || null,
       name: headsetData.name || `Headset ${nextNumber}`,
       model: headsetData.model || 'Jabra Engage 55 Mono',
@@ -148,12 +178,13 @@ class HeadsetManager extends EventEmitter {
     // Salvar no banco de dados
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO headsets
-      (id, serial_number, name, model, color, number, firmware_version, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (id, hostname, serial_number, name, model, color, number, firmware_version, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
       headset.id,
+      headset.hostname,
       headset.serialNumber,
       headset.name,
       headset.model,
@@ -241,6 +272,7 @@ class HeadsetManager extends EventEmitter {
   dongleConnected(dongleData) {
     const dongle = {
       id: dongleData.id || dongleData.deviceId,
+      hostname: this.options.hostname,
       headsetId: dongleData.headsetId || null,
       name: dongleData.name || 'Jabra Dongle',
       connected: true,
@@ -251,10 +283,10 @@ class HeadsetManager extends EventEmitter {
 
     // Salvar no banco
     const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO dongles (id, headset_id, name, connected, last_seen)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO dongles (id, hostname, headset_id, name, connected, last_seen)
+      VALUES (?, ?, ?, ?, ?, ?)
     `);
-    stmt.run(dongle.id, dongle.headsetId, dongle.name, 1, dongle.lastSeen);
+    stmt.run(dongle.id, dongle.hostname, dongle.headsetId, dongle.name, 1, dongle.lastSeen);
 
     console.log(`[HeadsetManager] Dongle conectado: ${dongle.name}`);
     this.emit('dongleConnected', dongle);
@@ -305,6 +337,7 @@ class HeadsetManager extends EventEmitter {
 
     const activeHeadset = {
       ...headset,
+      hostname: this.options.hostname,
       isOn: true,
       batteryLevel: state.batteryLevel || null,
       isCharging: state.isCharging || false,
@@ -383,6 +416,7 @@ class HeadsetManager extends EventEmitter {
    */
   getSystemState() {
     return {
+      hostname: this.options.hostname,
       registeredHeadsets: this.getRegisteredHeadsets(),
       activeHeadsets: this.getActiveHeadsets(),
       connectedDongles: this.getConnectedDongles(),

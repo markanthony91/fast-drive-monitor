@@ -9,6 +9,7 @@ const express = require('express');
 const { createServer } = require('http');
 const { WebSocketServer } = require('ws');
 const path = require('path');
+const os = require('os');
 const { HeadsetManager, HEADSET_COLORS } = require('../headsetManager');
 const { JabraService } = require('../jabraService');
 const { BatteryTracker } = require('../batteryTracker');
@@ -22,14 +23,29 @@ class ApiServer {
       ...options
     };
 
+    // Identificação do servidor
+    this.serverInfo = {
+      hostname: os.hostname(),
+      platform: os.platform(),
+      arch: os.arch(),
+      nodeVersion: process.version,
+      startedAt: Date.now()
+    };
+
     this.app = express();
     this.server = null;
     this.wss = null;
 
     // Serviços
-    this.headsetManager = new HeadsetManager({ dataDir: this.options.dataDir });
+    this.headsetManager = new HeadsetManager({
+      dataDir: this.options.dataDir,
+      hostname: this.serverInfo.hostname
+    });
     this.jabraService = new JabraService();
-    this.batteryTracker = new BatteryTracker({ dataDir: this.options.dataDir });
+    this.batteryTracker = new BatteryTracker({
+      dataDir: this.options.dataDir,
+      hostname: this.serverInfo.hostname
+    });
 
     // WebSocket clients
     this.wsClients = new Set();
@@ -96,9 +112,20 @@ class ApiServer {
   _setupRoutes() {
     const router = express.Router();
 
+    // === Informações do Servidor ===
+    router.get('/server-info', (req, res) => {
+      res.json({
+        ...this.serverInfo,
+        uptime: Date.now() - this.serverInfo.startedAt
+      });
+    });
+
     // === Estado do Sistema ===
     router.get('/state', (req, res) => {
-      res.json(this.headsetManager.getSystemState());
+      res.json({
+        hostname: this.serverInfo.hostname,
+        ...this.headsetManager.getSystemState()
+      });
     });
 
     // === Headsets ===
@@ -168,17 +195,26 @@ class ApiServer {
     // === Estatísticas ===
 
     router.get('/stats', (req, res) => {
-      res.json(this.batteryTracker.getStatistics());
+      res.json({
+        hostname: this.serverInfo.hostname,
+        ...this.batteryTracker.getStatistics()
+      });
     });
 
     router.get('/stats/battery-history', (req, res) => {
       const hours = parseInt(req.query.hours) || 24;
-      res.json(this.batteryTracker.getBatteryHistory(hours));
+      res.json({
+        hostname: this.serverInfo.hostname,
+        data: this.batteryTracker.getBatteryHistory(hours)
+      });
     });
 
     router.get('/stats/charging-history', (req, res) => {
       const limit = parseInt(req.query.limit) || 50;
-      res.json(this.batteryTracker.getChargingHistory(limit));
+      res.json({
+        hostname: this.serverInfo.hostname,
+        data: this.batteryTracker.getChargingHistory(limit)
+      });
     });
 
     // Montar rotas
@@ -203,7 +239,10 @@ class ApiServer {
       // Enviar estado inicial
       ws.send(JSON.stringify({
         type: 'init',
-        data: this.headsetManager.getSystemState()
+        data: this.headsetManager.getSystemState(),
+        hostname: this.serverInfo.hostname,
+        serverInfo: this.serverInfo,
+        timestamp: Date.now()
       }));
 
       ws.on('close', () => {
@@ -222,7 +261,12 @@ class ApiServer {
    * Broadcast para todos os clientes WebSocket
    */
   _broadcast(type, data) {
-    const message = JSON.stringify({ type, data, timestamp: Date.now() });
+    const message = JSON.stringify({
+      type,
+      data,
+      hostname: this.serverInfo.hostname,
+      timestamp: Date.now()
+    });
 
     this.wsClients.forEach((client) => {
       if (client.readyState === 1) { // WebSocket.OPEN

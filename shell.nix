@@ -11,7 +11,7 @@ pkgs.mkShell {
     nodePackages.yarn
 
     # Electron dependencies
-    electron_33
+    electron
 
     # USB/HID dependencies para comunicação com headset
     libusb1
@@ -85,5 +85,5 @@ pkgs.mkShell {
 
   # Variáveis de ambiente para Electron
   ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
-  ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron_33}/bin";
+  ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron}/bin";
 }
