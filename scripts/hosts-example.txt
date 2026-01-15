@@ -1,0 +1,15 @@
+# =============================================================================
+# Fast Drive - Lista de Hosts para Atualização em Massa
+# =============================================================================
+# Copie este arquivo para hosts.txt e adicione seus hosts
+# Linhas começando com # são ignoradas
+# =============================================================================
+
+# Exemplo de hosts:
+# pc-atendimento-01
+# pc-atendimento-02
+# pc-atendimento-03
+# 192.168.1.100
+# 192.168.1.101
+
+# Adicione seus hosts abaixo:

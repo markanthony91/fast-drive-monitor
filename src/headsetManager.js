@@ -150,11 +150,94 @@ class HeadsetManager extends EventEmitter {
   }
 
   /**
+   * Verifica se uma cor já está em uso por outro headset
+   */
+  isColorInUse(color, excludeId = null) {
+    for (const [id, headset] of this.registeredHeadsets) {
+      if (headset.color === color && id !== excludeId) {
+        return { inUse: true, headset };
+      }
+    }
+    return { inUse: false };
+  }
+
+  /**
+   * Verifica se um ID já existe
+   */
+  isIdInUse(id) {
+    return this.registeredHeadsets.has(id);
+  }
+
+  /**
+   * Verifica se um serial number já está em uso
+   */
+  isSerialNumberInUse(serialNumber, excludeId = null) {
+    if (!serialNumber) return { inUse: false };
+
+    for (const [id, headset] of this.registeredHeadsets) {
+      if (headset.serialNumber === serialNumber && id !== excludeId) {
+        return { inUse: true, headset };
+      }
+    }
+    return { inUse: false };
+  }
+
+  /**
+   * Obtém próxima cor disponível
+   */
+  getNextAvailableColor() {
+    const usedColors = new Set(
+      Array.from(this.registeredHeadsets.values()).map(h => h.color)
+    );
+
+    for (const color of Object.keys(HEADSET_COLORS)) {
+      if (!usedColors.has(color)) {
+        return color;
+      }
+    }
+    return null; // Todas as cores em uso
+  }
+
+  /**
    * Registra um novo headset
    */
   registerHeadset(headsetData) {
     const id = headsetData.id || this._generateId();
     const now = Date.now();
+
+    // Validar: ID não pode já existir (exceto se for update)
+    if (headsetData.id && this.isIdInUse(headsetData.id)) {
+      throw new Error(`ID '${headsetData.id}' já está em uso. Use updateHeadset para atualizar.`);
+    }
+
+    // Validar: Serial number exclusivo
+    if (headsetData.serialNumber) {
+      const serialCheck = this.isSerialNumberInUse(headsetData.serialNumber);
+      if (serialCheck.inUse) {
+        throw new Error(`Serial number '${headsetData.serialNumber}' já está em uso pelo headset '${serialCheck.headset.name}'.`);
+      }
+    }
+
+    // Validar: Cor exclusiva
+    const requestedColor = headsetData.color || this.getNextAvailableColor();
+
+    if (!requestedColor) {
+      throw new Error('Todas as cores já estão em uso. Limite máximo de 5 headsets atingido.');
+    }
+
+    if (!HEADSET_COLORS[requestedColor]) {
+      throw new Error(`Cor inválida: '${requestedColor}'. Cores disponíveis: ${Object.keys(HEADSET_COLORS).join(', ')}`);
+    }
+
+    const colorCheck = this.isColorInUse(requestedColor);
+    if (colorCheck.inUse) {
+      const availableColor = this.getNextAvailableColor();
+      if (availableColor) {
+        throw new Error(`Cor '${requestedColor}' já está em uso pelo headset '${colorCheck.headset.name}'. Próxima cor disponível: '${availableColor}'.`);
+      } else {
+        throw new Error(`Cor '${requestedColor}' já está em uso. Todas as cores estão ocupadas.`);
+      }
+    }
 
     // Encontrar próximo número disponível
     const numbers = Array.from(this.registeredHeadsets.values())
@@ -168,7 +251,7 @@ class HeadsetManager extends EventEmitter {
       serialNumber: headsetData.serialNumber || null,
       name: headsetData.name || `Headset ${nextNumber}`,
       model: headsetData.model || 'Jabra Engage 55 Mono',
-      color: headsetData.color || 'blue',
+      color: requestedColor,
       number: headsetData.number || nextNumber,
       firmwareVersion: headsetData.firmwareVersion || null,
       createdAt: now,
@@ -177,7 +260,7 @@ class HeadsetManager extends EventEmitter {
 
     // Salvar no banco de dados
     const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO headsets
+      INSERT INTO headsets
       (id, hostname, serial_number, name, model, color, number, firmware_version, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
@@ -197,7 +280,7 @@ class HeadsetManager extends EventEmitter {
 
     this.registeredHeadsets.set(id, headset);
 
-    console.log(`[HeadsetManager] Headset registrado: ${headset.name}`);
+    console.log(`[HeadsetManager] Headset registrado: ${headset.name} (cor: ${headset.color})`);
     this.emit('headsetRegistered', headset);
 
     return headset;
@@ -212,16 +295,32 @@ class HeadsetManager extends EventEmitter {
       throw new Error(`Headset ${id} não encontrado`);
     }
 
+    // Validar cor se estiver sendo alterada
+    if (updates.color) {
+      if (!HEADSET_COLORS[updates.color]) {
+        throw new Error(`Cor inválida: '${updates.color}'. Cores disponíveis: ${Object.keys(HEADSET_COLORS).join(', ')}`);
+      }
+
+      // Verificar se a nova cor já está em uso por outro headset
+      const colorCheck = this.isColorInUse(updates.color, id);
+      if (colorCheck.inUse) {
+        throw new Error(`Cor '${updates.color}' já está em uso pelo headset '${colorCheck.headset.name}'.`);
+      }
+    }
+
+    // Validar serial number se estiver sendo alterado
+    if (updates.serialNumber) {
+      const serialCheck = this.isSerialNumberInUse(updates.serialNumber, id);
+      if (serialCheck.inUse) {
+        throw new Error(`Serial number '${updates.serialNumber}' já está em uso pelo headset '${serialCheck.headset.name}'.`);
+      }
+    }
+
     const updatedHeadset = {
       ...headset,
       ...updates,
       updatedAt: Date.now()
     };
-
-    // Validar cor
-    if (updates.color && !HEADSET_COLORS[updates.color]) {
-      throw new Error(`Cor inválida: ${updates.color}`);
-    }
 
     const stmt = this.db.prepare(`
       UPDATE headsets
@@ -239,7 +338,7 @@ class HeadsetManager extends EventEmitter {
 
     this.registeredHeadsets.set(id, updatedHeadset);
 
-    console.log(`[HeadsetManager] Headset atualizado: ${updatedHeadset.name}`);
+    console.log(`[HeadsetManager] Headset atualizado: ${updatedHeadset.name} (cor: ${updatedHeadset.color})`);
     this.emit('headsetUpdated', updatedHeadset);
 
     return updatedHeadset;

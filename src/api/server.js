@@ -13,6 +13,7 @@ const os = require('os');
 const { HeadsetManager, HEADSET_COLORS } = require('../headsetManager');
 const { JabraService } = require('../jabraService');
 const { BatteryTracker } = require('../batteryTracker');
+const { UpdateManager } = require('../updateManager');
 
 class ApiServer {
   constructor(options = {}) {
@@ -46,6 +47,9 @@ class ApiServer {
       dataDir: this.options.dataDir,
       hostname: this.serverInfo.hostname
     });
+    this.updateManager = new UpdateManager({
+      autoRestart: false // Não reiniciar automaticamente
+    });
 
     // WebSocket clients
     this.wsClients = new Set();
@@ -61,6 +65,7 @@ class ApiServer {
     // Inicializar serviços
     await this.headsetManager.initialize();
     await this.batteryTracker.initialize();
+    await this.updateManager.initialize();
 
     // Configurar eventos
     this._setupEvents();
@@ -215,6 +220,47 @@ class ApiServer {
         hostname: this.serverInfo.hostname,
         data: this.batteryTracker.getChargingHistory(limit)
       });
+    });
+
+    // === Sistema de Atualizações ===
+
+    // Status do sistema de updates
+    router.get('/update/status', (req, res) => {
+      res.json({
+        hostname: this.serverInfo.hostname,
+        ...this.updateManager.getStatus()
+      });
+    });
+
+    // Verificar se há atualizações
+    router.get('/update/check', async (req, res) => {
+      const result = await this.updateManager.checkForUpdates();
+      res.json({
+        hostname: this.serverInfo.hostname,
+        ...result
+      });
+    });
+
+    // Aplicar atualizações
+    router.post('/update/apply', async (req, res) => {
+      const result = await this.updateManager.applyUpdate();
+      res.json({
+        hostname: this.serverInfo.hostname,
+        ...result
+      });
+    });
+
+    // Reiniciar serviço
+    router.post('/update/restart', (req, res) => {
+      res.json({
+        hostname: this.serverInfo.hostname,
+        success: true,
+        message: 'Reiniciando em 3 segundos...'
+      });
+
+      setTimeout(() => {
+        this.updateManager.restartService();
+      }, 3000);
     });
 
     // Montar rotas
