@@ -23,7 +23,7 @@
             nodePackages.yarn
 
             # Electron dependencies
-            electron
+            electron_33
 
             # USB/HID dependencies para comunicação com headset
             libusb1
@@ -90,11 +90,14 @@
             # Configurar variáveis de ambiente para bibliotecas
             export LD_LIBRARY_PATH="${pkgs.stdenv.cc.cc.lib}/lib:${pkgs.mesa}/lib:${pkgs.libGL}/lib:${pkgs.libglvnd}/lib:${pkgs.libusb1}/lib:${pkgs.hidapi}/lib:${pkgs.gtk3}/lib:${pkgs.glib.out}/lib:${pkgs.nss}/lib:${pkgs.nspr}/lib:${pkgs.alsa-lib}/lib:${pkgs.cups.lib}/lib:${pkgs.dbus}/lib:${pkgs.at-spi2-atk}/lib:${pkgs.at-spi2-core}/lib:${pkgs.expat}/lib:${pkgs.libdrm}/lib:${pkgs.libxkbcommon}/lib:${pkgs.xorg.libX11}/lib:${pkgs.xorg.libXcomposite}/lib:${pkgs.xorg.libXdamage}/lib:${pkgs.xorg.libXext}/lib:${pkgs.xorg.libXfixes}/lib:${pkgs.xorg.libXrandr}/lib:${pkgs.xorg.libxcb}/lib:${pkgs.pango.out}/lib:${pkgs.cairo}/lib:$LD_LIBRARY_PATH"
             export PKG_CONFIG_PATH="${pkgs.libusb1}/lib/pkgconfig:${pkgs.hidapi}/lib/pkgconfig:$PKG_CONFIG_PATH"
+            
+            # Forçar C++20 para compilação de módulos nativos (necessário para Electron v34+)
+            export CXXFLAGS="-std=c++20"
           '';
 
           # Variáveis de ambiente para Electron
           ELECTRON_SKIP_BINARY_DOWNLOAD = "1";
-          ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron}/bin";
+          ELECTRON_OVERRIDE_DIST_PATH = "${pkgs.electron_33}/bin";
         };
 
         packages.default = pkgs.buildNpmPackage {
