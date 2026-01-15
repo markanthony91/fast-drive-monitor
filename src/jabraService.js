@@ -412,9 +412,11 @@ class JabraService extends EventEmitter {
     });
     this._subscriptions = [];
 
-    // Parar SDK
-    if (this.sdk) {
+    // Parar SDK (se o método existir)
+    if (this.sdk && typeof this.sdk.stop === 'function') {
       await this.sdk.stop();
+    } else if (this.sdk && typeof this.sdk.dispose === 'function') {
+      await this.sdk.dispose();
     }
 
     this._handleDeviceDisconnect();
