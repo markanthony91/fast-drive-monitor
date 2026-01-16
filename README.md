@@ -3,8 +3,11 @@
 > Sistema de monitoramento de headsets Jabra Engage 55 Mono com API REST, WebSocket e interface web.
 
 **Versão:** 2.4.0
+
 **Última atualização:** 2026-01-15
+
 **Status:** Em desenvolvimento
+
 
 ---
 
