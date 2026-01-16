@@ -119,17 +119,6 @@ body {
   font-size: 0.75rem;
 }
 
-.datetime {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
-}
-
-.date {
-  font-size: 0.875rem;
-  color: var(--text-secondary);
-}
-
 .clock {
   font-size: 1.5rem;
   font-weight: 600;

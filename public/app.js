@@ -44,12 +44,6 @@ class FastDriveApp {
     const seconds = String(now.getSeconds()).padStart(2, '0');
     document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
 
-    // Data
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const year = now.getFullYear();
-    document.getElementById('date').textContent = `${day}/${month}/${year}`;
-
     // Uptime
     if (this.serverInfo && this.serverInfo.startedAt) {
       const uptimeMs = Date.now() - this.serverInfo.startedAt;
