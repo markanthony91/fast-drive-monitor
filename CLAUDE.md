@@ -176,11 +176,83 @@ test:     # Testes
 refactor: # Refatoração
 ```
 
+## Fluxo de Trabalho Obrigatório para Claude
+
+### 1. Ambiente
+- **SEMPRE** usar `nix-shell` antes de qualquer operação
+- Verificar se ambiente está configurado corretamente
+
+### 2. Desenvolvimento de Features
+Para cada nova feature ou correção:
+```bash
+# 1. Implementar a feature
+# 2. Executar testes (OBRIGATÓRIO)
+npm test
+
+# 3. Incrementar versão no package.json
+# - patch (X.X.1): correções de bugs
+# - minor (X.1.0): novas features
+# - major (1.0.0): breaking changes
+
+# 4. Atualizar README.md se necessário
+
+# 5. Commit com mensagem descritiva
+git add .
+git commit -m "feat: descrição da feature"
+
+# 6. Push para repositório remoto
+git push origin main
+git push origin develop
+```
+
+### 3. Versionamento Semântico
+```
+MAJOR.MINOR.PATCH
+
+2.3.0 → 2.3.1  # fix: correção de bug
+2.3.1 → 2.4.0  # feat: nova funcionalidade
+2.4.0 → 3.0.0  # breaking change
+```
+
+## Estatísticas do Projeto
+
+| Métrica | Valor |
+|---------|-------|
+| Versão | 2.3.0 |
+| Linhas de código | ~3.800 |
+| Arquivos JS | 10 |
+| Testes | 63 |
+| Horas estimadas | ~12h |
+| Início | 2026-01-14 |
+| Última atualização | 2026-01-16 |
+
+### Histórico de Desenvolvimento
+| Versão | Data | Horas | Descrição |
+|--------|------|-------|-----------|
+| 1.0.0 | 2026-01-14 | 3h | Versão inicial - CLI Jabra Monitor |
+| 2.0.0 | 2026-01-14 | 3h | Frontend web e API REST |
+| 2.1.0 | 2026-01-15 | 2h | Hostname tracking |
+| 2.2.0 | 2026-01-15 | 2h | Sistema de auto-update e validação |
+| 2.3.0 | 2026-01-16 | 2h | Documentação expandida e testes |
+
 ## Dicas para Claude
 
-1. **Sempre ler arquivos antes de editar** - Entender o contexto existente
-2. **Manter hostname** - Incluir em todas as respostas/dados
-3. **Testes primeiro** - Verificar testes existentes antes de modificar
-4. **Nix para Linux** - Usar `nix-shell` para ambiente correto
-5. **Evitar breaking changes** - Manter compatibilidade da API
-6. **Documentar no README** - Atualizar changelog e exemplos
+1. **Nix obrigatório** - Sempre usar `nix-shell` para desenvolvimento
+2. **Testar sempre** - Executar `npm test` após cada modificação
+3. **Commit frequente** - Fazer commit e push de cada evolução
+4. **Versionar** - Incrementar versão no package.json
+5. **Documentar** - Manter README.md atualizado
+6. **Manter hostname** - Incluir em todas as respostas/dados
+7. **Estimar tempo** - Registrar horas gastas nas estatísticas
+8. **Branches** - Manter main e develop sincronizados
+9. **Ler antes de editar** - Entender contexto existente
+10. **Mínimo necessário** - Não adicionar código além do solicitado
+
+## Checklist de Entrega
+
+- [ ] Testes passando (`npm test`)
+- [ ] Versão incrementada no `package.json`
+- [ ] README.md atualizado
+- [ ] Commit realizado com mensagem descritiva
+- [ ] Push para repositório remoto
+- [ ] Estatísticas atualizadas neste arquivo
