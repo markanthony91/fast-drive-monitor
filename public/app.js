@@ -19,6 +19,24 @@ class FastDriveApp {
     this.editingHeadsetId = null;
     this.deletingHeadsetId = null;
 
+    // Event log
+    this.eventLog = [];
+    this.maxLogEntries = 50;
+
+    // Settings
+    this.settings = {
+      theme: localStorage.getItem('theme') || 'dark',
+      compactMode: localStorage.getItem('compactMode') === 'true',
+      soundEnabled: localStorage.getItem('soundEnabled') !== 'false'
+    };
+
+    // Low battery tracking (to avoid duplicate alerts)
+    this.lowBatteryAlerted = new Set();
+
+    // Battery history for sparklines (per headset)
+    this.batteryHistory = {};
+    this.maxHistoryPoints = 20;
+
     this.init();
   }
 
@@ -26,8 +44,58 @@ class FastDriveApp {
     this.bindElements();
     this.bindEvents();
     this.startClock();
+    this.applySettings();
+    this.initEventLog();
     await this.loadInitialState();
     this.connectWebSocket();
+  }
+
+  applySettings() {
+    // Apply theme
+    if (this.settings.theme === 'light') {
+      document.body.classList.add('light-theme');
+    }
+    // Apply compact mode
+    if (this.settings.compactMode) {
+      document.body.classList.add('compact-mode');
+    }
+  }
+
+  updateToolbarState() {
+    // Theme icon
+    const themeIcon = document.getElementById('themeIcon');
+    if (themeIcon) {
+      themeIcon.innerHTML = this.settings.theme === 'light' ? '&#9790;' : '&#9728;';
+    }
+
+    // Compact mode button
+    const compactBtn = document.getElementById('compactModeBtn');
+    if (compactBtn) {
+      compactBtn.classList.toggle('active', this.settings.compactMode);
+    }
+
+    // Sound icon
+    const soundIcon = document.getElementById('soundIcon');
+    if (soundIcon) {
+      soundIcon.innerHTML = this.settings.soundEnabled ? '&#128266;' : '&#128264;';
+    }
+
+    const soundBtn = document.getElementById('soundToggleBtn');
+    if (soundBtn) {
+      soundBtn.classList.toggle('active', this.settings.soundEnabled);
+    }
+  }
+
+  initEventLog() {
+    const panel = document.getElementById('eventLogPanel');
+    const header = document.querySelector('.event-log-header');
+
+    // Start collapsed
+    panel.classList.add('collapsed');
+
+    header.addEventListener('click', () => {
+      panel.classList.toggle('collapsed');
+    });
   }
 
   startClock() {
@@ -85,6 +153,258 @@ class FastDriveApp {
 
     // Versão
     document.getElementById('version').textContent = serverInfo.version ? `v${serverInfo.version}` : 'v---';
+  }
+
+  // === Toast Notifications ===
+
+  showToast(type, title, message, duration = 5000) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icons = {
+      success: '✓',
+      warning: '⚠',
+      error: '✕',
+      info: 'ℹ'
+    };
+
+    toast.innerHTML = `
+      <span class="toast-icon">${icons[type] || 'ℹ'}</span>
+      <div class="toast-content">
+        <div class="toast-title">${this.escapeHtml(title)}</div>
+        <div class="toast-message">${this.escapeHtml(message)}</div>
+      </div>
+      <button class="toast-close">&times;</button>
+    `;
+
+    toast.querySelector('.toast-close').addEventListener('click', () => {
+      this.removeToast(toast);
+    });
+
+    container.appendChild(toast);
+
+    // Auto-remove
+    setTimeout(() => this.removeToast(toast), duration);
+
+    return toast;
+  }
+
+  removeToast(toast) {
+    toast.style.animation = 'slideOut 0.3s ease forwards';
+    setTimeout(() => toast.remove(), 300);
+  }
+
+  // === Event Log ===
+
+  addEventLog(icon, text, type = 'info') {
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+
+    this.eventLog.unshift({ time, icon, text, type });
+
+    // Keep max entries
+    if (this.eventLog.length > this.maxLogEntries) {
+      this.eventLog.pop();
+    }
+
+    this.renderEventLog();
+  }
+
+  renderEventLog() {
+    const list = document.getElementById('eventLogList');
+    list.innerHTML = this.eventLog.slice(0, 10).map(event => `
+      <div class="event-log-item">
+        <span class="event-log-time">${event.time}</span>
+        <span class="event-log-icon">${event.icon}</span>
+        <span class="event-log-text">${this.escapeHtml(event.text)}</span>
+      </div>
+    `).join('');
+  }
+
+  // === Time Formatting ===
+
+  formatEstimatedTime(minutes) {
+    if (!minutes || minutes <= 0) return null;
+
+    const hours = Math.floor(minutes / 60);
+    const mins = Math.round(minutes % 60);
+
+    if (hours > 0) {
+      return `~${hours}h ${mins}min`;
+    }
+    return `~${mins}min`;
+  }
+
+  // === Sound Alert ===
+
+  playAlertSound() {
+    if (!this.settings.soundEnabled) return;
+
+    try {
+      // Create a simple beep using Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.value = 0.3;
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.2);
+    } catch (e) {
+      console.warn('Could not play alert sound:', e);
+    }
+  }
+
+  // === Export Functions ===
+
+  exportStats(format = 'json') {
+    const data = {
+      exportedAt: new Date().toISOString(),
+      serverInfo: this.serverInfo,
+      headsets: this.state.registeredHeadsets,
+      activeHeadsets: this.state.activeHeadsets,
+      dongles: this.state.connectedDongles,
+      eventLog: this.eventLog
+    };
+
+    if (format === 'json') {
+      this.downloadFile(
+        JSON.stringify(data, null, 2),
+        `fast-drive-export-${Date.now()}.json`,
+        'application/json'
+      );
+    } else if (format === 'csv') {
+      const csvData = this.convertToCSV(data.headsets);
+      this.downloadFile(
+        csvData,
+        `fast-drive-headsets-${Date.now()}.csv`,
+        'text/csv'
+      );
+    }
+
+    this.showToast('success', 'Exportado', `Dados exportados em formato ${format.toUpperCase()}`);
+    this.addEventLog('📥', `Dados exportados (${format.toUpperCase()})`);
+  }
+
+  convertToCSV(data) {
+    if (!data || data.length === 0) return '';
+
+    const headers = Object.keys(data[0]);
+    const rows = data.map(row =>
+      headers.map(h => JSON.stringify(row[h] ?? '')).join(',')
+    );
+
+    return [headers.join(','), ...rows].join('\n');
+  }
+
+  downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // === Theme Toggle ===
+
+  toggleTheme() {
+    const isLight = document.body.classList.toggle('light-theme');
+    this.settings.theme = isLight ? 'light' : 'dark';
+    localStorage.setItem('theme', this.settings.theme);
+    this.updateToolbarState();
+    this.addEventLog('🎨', `Tema alterado para ${isLight ? 'claro' : 'escuro'}`);
+  }
+
+  // === Compact Mode ===
+
+  toggleCompactMode() {
+    const isCompact = document.body.classList.toggle('compact-mode');
+    this.settings.compactMode = isCompact;
+    localStorage.setItem('compactMode', isCompact);
+    this.updateToolbarState();
+    this.addEventLog('📐', `Modo ${isCompact ? 'compacto' : 'normal'} ativado`);
+  }
+
+  // === Sound Toggle ===
+
+  toggleSound() {
+    this.settings.soundEnabled = !this.settings.soundEnabled;
+    localStorage.setItem('soundEnabled', this.settings.soundEnabled);
+    this.updateToolbarState();
+    this.showToast('info', 'Som', this.settings.soundEnabled ? 'Alertas sonoros ativados' : 'Alertas sonoros desativados');
+  }
+
+  // === Battery Alert Check ===
+
+  checkBatteryAlert(headset) {
+    const level = headset.batteryLevel ?? 100;
+    const id = headset.id;
+
+    if (level < 20 && !headset.isCharging) {
+      if (!this.lowBatteryAlerted.has(id)) {
+        this.lowBatteryAlerted.add(id);
+        this.showToast('warning', 'Bateria Baixa', `${headset.name}: ${level}%`, 8000);
+        this.addEventLog('🔋', `Bateria baixa: ${headset.name} (${level}%)`, 'warning');
+        this.playAlertSound();
+      }
+    } else if (level >= 20 || headset.isCharging) {
+      this.lowBatteryAlerted.delete(id);
+    }
+  }
+
+  // === Battery History / Sparkline ===
+
+  recordBatteryLevel(headsetId, level) {
+    if (!this.batteryHistory[headsetId]) {
+      this.batteryHistory[headsetId] = [];
+    }
+
+    this.batteryHistory[headsetId].push({
+      level,
+      time: Date.now()
+    });
+
+    // Keep only last N points
+    if (this.batteryHistory[headsetId].length > this.maxHistoryPoints) {
+      this.batteryHistory[headsetId].shift();
+    }
+  }
+
+  generateSparkline(headsetId, width = 60, height = 20) {
+    const history = this.batteryHistory[headsetId];
+    if (!history || history.length < 2) {
+      return '';
+    }
+
+    const points = history.map((h, i) => {
+      const x = (i / (history.length - 1)) * width;
+      const y = height - (h.level / 100) * height;
+      return `${x},${y}`;
+    });
+
+    const lastLevel = history[history.length - 1].level;
+    const color = lastLevel < 20 ? '#EF4444' : lastLevel < 50 ? '#EAB308' : '#22C55E';
+
+    return `
+      <svg class="sparkline" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+        <polyline
+          fill="none"
+          stroke="${color}"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          points="${points.join(' ')}"
+        />
+      </svg>
+    `;
   }
 
   bindElements() {
@@ -152,6 +472,16 @@ class FastDriveApp {
         this.closeDeleteModal();
       }
     });
+
+    // Toolbar buttons
+    document.getElementById('exportJsonBtn').addEventListener('click', () => this.exportStats('json'));
+    document.getElementById('exportCsvBtn').addEventListener('click', () => this.exportStats('csv'));
+    document.getElementById('themeToggleBtn').addEventListener('click', () => this.toggleTheme());
+    document.getElementById('compactModeBtn').addEventListener('click', () => this.toggleCompactMode());
+    document.getElementById('soundToggleBtn').addEventListener('click', () => this.toggleSound());
+
+    // Update toolbar button states
+    this.updateToolbarState();
   }
 
   async loadInitialState() {
@@ -203,38 +533,62 @@ class FastDriveApp {
         if (message.serverInfo) {
           this.updateServerInfo(message.serverInfo);
         }
+        this.addEventLog('🔌', 'Conexão estabelecida com o servidor');
         break;
 
       case 'dongleConnected':
         this.addDongle(message.data);
+        this.addEventLog('📡', `Dongle conectado: ${message.data.name || 'Jabra Dongle'}`);
+        this.showToast('success', 'Dongle Conectado', message.data.name || 'Jabra Dongle');
         break;
 
       case 'dongleDisconnected':
         this.removeDongle(message.data.id);
+        this.addEventLog('📡', 'Dongle desconectado', 'warning');
+        this.showToast('warning', 'Dongle Desconectado', 'Um dongle foi removido');
         break;
 
       case 'headsetTurnedOn':
         this.addActiveHeadset(message.data);
+        this.addEventLog('🎧', `Headset ligado: ${message.data.name}`);
+        this.showToast('success', 'Headset Online', message.data.name);
         break;
 
       case 'headsetTurnedOff':
+        const offHeadset = this.state.activeHeadsets.find(h => h.id === message.data.id);
+        const offName = offHeadset?.name || 'Headset';
         this.removeActiveHeadset(message.data.id);
+        this.addEventLog('🎧', `Headset desligado: ${offName}`, 'warning');
+        this.showToast('warning', 'Headset Offline', `${offName} foi desconectado`);
+        this.playAlertSound();
         break;
 
       case 'headsetStateUpdated':
         this.updateActiveHeadset(message.data);
+        // Log significant battery changes
+        if (message.data.batteryLevel !== undefined) {
+          const existing = this.state.activeHeadsets.find(h => h.id === message.data.id);
+          if (existing && Math.abs((existing.batteryLevel || 0) - message.data.batteryLevel) >= 5) {
+            this.addEventLog('🔋', `${message.data.name}: ${message.data.batteryLevel}%`);
+          }
+        }
         break;
 
       case 'headsetRegistered':
         this.addRegisteredHeadset(message.data);
+        this.addEventLog('➕', `Headset registrado: ${message.data.name}`);
+        this.showToast('success', 'Headset Registrado', message.data.name);
         break;
 
       case 'headsetUpdated':
         this.updateRegisteredHeadset(message.data);
+        this.addEventLog('✏️', `Headset atualizado: ${message.data.name}`);
         break;
 
       case 'headsetRemoved':
+        const removed = this.state.registeredHeadsets.find(h => h.id === message.data.id);
         this.removeRegisteredHeadset(message.data.id);
+        this.addEventLog('🗑️', `Headset removido: ${removed?.name || 'Unknown'}`);
         break;
     }
   }
@@ -341,6 +695,36 @@ class FastDriveApp {
     const batteryClass = batteryLevel < 20 ? 'low' : batteryLevel < 50 ? 'medium' : 'high';
     const isLightColor = headset.color === 'white' || headset.color === 'yellow';
 
+    // Add battery-low class for visual alert
+    if (batteryLevel < 20 && !headset.isCharging) {
+      card.classList.add('battery-low');
+    }
+
+    // Check battery alert
+    this.checkBatteryAlert(headset);
+
+    // Record battery level for sparkline
+    if (headset.batteryLevel !== undefined) {
+      this.recordBatteryLevel(headset.id, headset.batteryLevel);
+    }
+
+    // Generate sparkline
+    const sparklineHtml = this.generateSparkline(headset.id);
+
+    // Estimated time
+    let estimateHtml = '';
+    if (headset.isCharging && headset.estimatedTimeToFull) {
+      const timeStr = this.formatEstimatedTime(headset.estimatedTimeToFull);
+      if (timeStr) {
+        estimateHtml = `<div class="battery-estimate charging">Carga completa em ${timeStr}</div>`;
+      }
+    } else if (!headset.isCharging && headset.estimatedTimeToEmpty) {
+      const timeStr = this.formatEstimatedTime(headset.estimatedTimeToEmpty);
+      if (timeStr) {
+        estimateHtml = `<div class="battery-estimate">Restante: ${timeStr}</div>`;
+      }
+    }
+
     card.innerHTML = `
       <div class="headset-header">
         <div class="headset-identity">
@@ -365,7 +749,9 @@ class FastDriveApp {
         <div class="battery-info">
           <span class="battery-percentage">${batteryLevel}%</span>
           <span>${headset.isCharging ? 'Carregando' : 'Em uso'}</span>
+          ${sparklineHtml}
         </div>
+        ${estimateHtml}
       </div>
     `;
 

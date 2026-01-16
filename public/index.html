@@ -27,6 +27,23 @@
         <div class="uptime" id="uptime">Uptime: --</div>
       </div>
       <div class="header-right">
+        <div class="toolbar">
+          <button class="toolbar-btn" id="exportJsonBtn" title="Exportar JSON">
+            <span>&#128190;</span>
+          </button>
+          <button class="toolbar-btn" id="exportCsvBtn" title="Exportar CSV">
+            <span>&#128196;</span>
+          </button>
+          <button class="toolbar-btn" id="themeToggleBtn" title="Alternar tema">
+            <span id="themeIcon">&#9728;</span>
+          </button>
+          <button class="toolbar-btn" id="compactModeBtn" title="Modo compacto">
+            <span>&#9638;</span>
+          </button>
+          <button class="toolbar-btn" id="soundToggleBtn" title="Alternar som">
+            <span id="soundIcon">&#128266;</span>
+          </button>
+        </div>
         <div class="connection-status" id="connectionStatus">
           <span class="status-dot"></span>
           <span class="status-text">Conectando...</span>
@@ -139,6 +156,18 @@
           <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Remover</button>
         </div>
       </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Event Log Panel -->
+    <div class="event-log-panel" id="eventLogPanel">
+      <div class="event-log-header">
+        <h4>Eventos Recentes</h4>
+        <button class="event-log-toggle" id="eventLogToggle">&#9660;</button>
+      </div>
+      <div class="event-log-list" id="eventLogList"></div>
     </div>
   </div>
 

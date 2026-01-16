@@ -366,7 +366,17 @@ class ApiServer {
     });
 
     this.headsetManager.on('headsetTurnedOn', (headset) => {
-      this._broadcast('headsetTurnedOn', headset);
+      // Enriquecer com estimativas de tempo do BatteryTracker
+      const enrichedHeadset = {
+        ...headset,
+        estimatedTimeToFull: headset.isCharging
+          ? this.batteryTracker.estimateTimeToFullCharge(headset.batteryLevel)
+          : null,
+        estimatedTimeToEmpty: !headset.isCharging
+          ? this.batteryTracker.estimateBatteryLife(headset.batteryLevel, headset.isInCall)
+          : null
+      };
+      this._broadcast('headsetTurnedOn', enrichedHeadset);
     });
 
     this.headsetManager.on('headsetTurnedOff', (data) => {
@@ -374,7 +384,17 @@ class ApiServer {
     });
 
     this.headsetManager.on('headsetStateUpdated', (headset) => {
-      this._broadcast('headsetStateUpdated', headset);
+      // Enriquecer com estimativas de tempo do BatteryTracker
+      const enrichedHeadset = {
+        ...headset,
+        estimatedTimeToFull: headset.isCharging
+          ? this.batteryTracker.estimateTimeToFullCharge(headset.batteryLevel)
+          : null,
+        estimatedTimeToEmpty: !headset.isCharging
+          ? this.batteryTracker.estimateBatteryLife(headset.batteryLevel, headset.isInCall)
+          : null
+      };
+      this._broadcast('headsetStateUpdated', enrichedHeadset);
     });
 
     // Eventos do JabraService

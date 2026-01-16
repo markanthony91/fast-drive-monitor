@@ -214,15 +214,44 @@ MAJOR.MINOR.PATCH
 2.4.0 → 3.0.0  # breaking change
 ```
 
+## Contexto de Uso - Servidor Kiosk
+
+Este sistema é destinado para **servidores Kiosk**, onde os atendentes **não têm acesso direto** ao servidor em si. O Fast Drive roda no servidor e monitora os headsets Jabra conectados.
+
+### Arquitetura Atual
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Headset Jabra  │────▶│  Servidor Kiosk  │────▶│  Interface Web  │
+│  Engage 55      │     │  (Fast Drive)    │     │  (Admin)        │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+```
+
+### Roadmap Futuro - Integração Kiosk
+
+**Fase 1 (Atual):** Monitoramento via interface web admin
+- Dashboard de headsets ativos
+- Alertas de bateria baixa
+- Log de eventos
+
+**Fase 2 (Planejado):** Exibição no Kiosk
+- Widget informativo no kiosk mostrando status do headset do atendente
+- Indicador visual de bateria no canto da tela do kiosk
+- Notificação para o atendente quando bateria estiver baixa
+
+**Fase 3 (Futuro):** Integração completa
+- API para outros sistemas consultarem status dos headsets
+- Webhook para alertas em sistemas externos
+- Dashboard centralizado para múltiplos kiosks
+
 ## Estatísticas do Projeto
 
 | Métrica | Valor |
 |---------|-------|
-| Versão | 2.6.0 |
-| Linhas de código | ~3.800 |
+| Versão | 2.7.0 |
+| Linhas de código | ~4.500 |
 | Arquivos JS | 10 |
 | Testes | 63 |
-| Horas estimadas | ~12h |
+| Horas estimadas | ~14h |
 | Início | 2026-01-14 |
 | Última atualização | 2026-01-16 |
 
@@ -237,6 +266,18 @@ MAJOR.MINOR.PATCH
 | 2.4.0 | 2026-01-16 | 0.5h | Alteração da porta para 18080 |
 | 2.5.0 | 2026-01-16 | 0.5h | Relógio e hostname na interface |
 | 2.6.0 | 2026-01-16 | 0.5h | IP, versão, data e uptime na interface |
+| 2.7.0 | 2026-01-16 | 2h | Features avançadas: alertas, sparkline, temas, export |
+
+### Features da Versão 2.7.0
+- **Alerta de bateria baixa** - Toast e som quando bateria < 20%
+- **Tempo estimado** - Mostra tempo restante de bateria/carga
+- **Notificação de desconexão** - Alerta quando headset desconecta
+- **Sparkline de bateria** - Mini gráfico do histórico de bateria
+- **Log de eventos** - Painel com eventos recentes (conexões, alertas)
+- **Exportar dados** - Export para JSON ou CSV
+- **Tema claro/escuro** - Toggle de tema com persistência
+- **Som de alerta** - Beep sonoro para alertas críticos
+- **Modo compacto** - Interface reduzida para telas menores
 
 ## Dicas para Claude
 
