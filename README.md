@@ -2,7 +2,7 @@
 
 > Sistema de monitoramento de headsets Jabra Engage 55 Mono com API REST, WebSocket e interface web.
 
-**Versão:** 2.3.0
+**Versão:** 2.4.0
 **Última atualização:** 2026-01-15
 **Status:** Em desenvolvimento
 
@@ -113,7 +113,7 @@ sudo usermod -aG plugdev $USER
 
 ```bash
 npm start
-# Acesse: http://localhost:3000
+# Acesse: http://localhost:18080
 ```
 
 ### Modo CLI
@@ -142,7 +142,7 @@ npm run electron:dev
 
 ## API REST
 
-Base URL: `http://localhost:3000/api`
+Base URL: `http://localhost:18080/api`
 
 ### Endpoints Disponíveis
 
@@ -496,7 +496,7 @@ Base URL: `http://localhost:3000/api`
 
 ## WebSocket
 
-Conecte em: `ws://localhost:3000/ws`
+Conecte em: `ws://localhost:18080/ws`
 
 ### Eventos Recebidos
 
@@ -525,7 +525,7 @@ Conecte em: `ws://localhost:3000/ws`
 ### Exemplo de Conexão
 
 ```javascript
-const ws = new WebSocket('ws://localhost:3000/ws');
+const ws = new WebSocket('ws://localhost:18080/ws');
 
 ws.onmessage = (event) => {
   const message = JSON.parse(event.data);
@@ -540,7 +540,7 @@ ws.onmessage = (event) => {
 ### Informações do Servidor
 
 ```bash
-curl http://localhost:3000/api/server-info
+curl http://localhost:18080/api/server-info
 ```
 
 Resposta:
@@ -558,25 +558,25 @@ Resposta:
 ### Estado Completo do Sistema
 
 ```bash
-curl http://localhost:3000/api/state
+curl http://localhost:18080/api/state
 ```
 
 ### Listar Headsets
 
 ```bash
-curl http://localhost:3000/api/headsets
+curl http://localhost:18080/api/headsets
 ```
 
 ### Obter Headset Específico
 
 ```bash
-curl http://localhost:3000/api/headsets/hs_123456789
+curl http://localhost:18080/api/headsets/hs_123456789
 ```
 
 ### Registrar Novo Headset
 
 ```bash
-curl -X POST http://localhost:3000/api/headsets \
+curl -X POST http://localhost:18080/api/headsets \
   -H "Content-Type: application/json" \
   -d '{"name": "Headset Marcelo", "color": "blue", "number": 1}'
 ```
@@ -584,7 +584,7 @@ curl -X POST http://localhost:3000/api/headsets \
 ### Atualizar Headset
 
 ```bash
-curl -X PUT http://localhost:3000/api/headsets/hs_123456789 \
+curl -X PUT http://localhost:18080/api/headsets/hs_123456789 \
   -H "Content-Type: application/json" \
   -d '{"name": "Novo Nome", "color": "green"}'
 ```
@@ -592,37 +592,37 @@ curl -X PUT http://localhost:3000/api/headsets/hs_123456789 \
 ### Remover Headset
 
 ```bash
-curl -X DELETE http://localhost:3000/api/headsets/hs_123456789
+curl -X DELETE http://localhost:18080/api/headsets/hs_123456789
 ```
 
 ### Listar Dongles Conectados
 
 ```bash
-curl http://localhost:3000/api/dongles
+curl http://localhost:18080/api/dongles
 ```
 
 ### Cores Disponíveis
 
 ```bash
-curl http://localhost:3000/api/colors
+curl http://localhost:18080/api/colors
 ```
 
 ### Estatísticas Completas
 
 ```bash
-curl http://localhost:3000/api/stats
+curl http://localhost:18080/api/stats
 ```
 
 ### Histórico de Bateria (últimas 24 horas)
 
 ```bash
-curl "http://localhost:3000/api/stats/battery-history?hours=24"
+curl "http://localhost:18080/api/stats/battery-history?hours=24"
 ```
 
 ### Histórico de Carregamento
 
 ```bash
-curl "http://localhost:3000/api/stats/charging-history?limit=10"
+curl "http://localhost:18080/api/stats/charging-history?limit=10"
 ```
 
 ### Testar WebSocket com websocat
@@ -632,7 +632,7 @@ curl "http://localhost:3000/api/stats/charging-history?limit=10"
 # Fedora: sudo dnf install websocat
 # Ubuntu: sudo apt install websocat
 
-websocat ws://localhost:3000/ws
+websocat ws://localhost:18080/ws
 ```
 
 ---
@@ -718,17 +718,17 @@ O Fast Drive inclui um sistema de atualização automática baseado em Git, perm
 
 ```bash
 # 1. Verificar se há atualizações
-curl -X POST http://localhost:3000/api/update/check
+curl -X POST http://localhost:18080/api/update/check
 
 # Resposta: {"available": true, "behind": 3, "changes": [...]}
 
 # 2. Aplicar atualização
-curl -X POST http://localhost:3000/api/update/apply
+curl -X POST http://localhost:18080/api/update/apply
 
 # Resposta: {"success": true, "restartRequired": true}
 
 # 3. Reiniciar serviço (Windows com NSSM)
-curl -X POST http://localhost:3000/api/update/restart
+curl -X POST http://localhost:18080/api/update/restart
 ```
 
 ### Atualização em Massa
@@ -827,7 +827,7 @@ Para melhor coexistência, instale o **Jabra Device Connector**:
 │  ┌─────────────────┐        ┌─────────────────┐                 │
 │  │   Fast Drive    │        │  Softphone C#   │                 │
 │  │   (Node.js)     │        │  (.NET SDK)     │                 │
-│  │   Port 3000     │        │  Sua aplicação  │                 │
+│  │   Port 18080    │        │  Sua aplicação  │                 │
 │  └────────┬────────┘        └────────┬────────┘                 │
 │           │                          │                           │
 │           ▼                          ▼                           │
@@ -950,7 +950,7 @@ RUN npm ci --only=production
 
 COPY . .
 
-EXPOSE 3000
+EXPOSE 18080
 
 CMD ["node", "src/api/server.js"]
 ```
@@ -963,7 +963,7 @@ services:
   fast-drive:
     build: .
     ports:
-      - "3000:3000"
+      - "18080:18080"
     volumes:
       - ./data:/app/data
     # Para acesso USB (requer configuração adicional)
@@ -1068,13 +1068,13 @@ Localização: `data/battery_tracker.db` e `data/headsets.db`
 │                       CLIENTE                                │
 │  ┌─────────────────┐  ┌─────────────────┐                   │
 │  │   Browser/Web   │  │    Electron     │                   │
-│  │  localhost:3000 │  │  (BrowserWindow)│                   │
+│  │  localhost:18080 │  │  (BrowserWindow)│                   │
 │  └────────┬────────┘  └────────┬────────┘                   │
 │           │                     │                            │
 │           ▼                     ▼                            │
 │  ┌─────────────────────────────────────────────────────────┐│
 │  │              API REST + WebSocket                        ││
-│  │              http://localhost:3000                       ││
+│  │              http://localhost:18080                       ││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -1199,6 +1199,15 @@ Este projeto foi desenvolvido com assistência de IA (Claude Code).
 ---
 
 ## Changelog
+
+### [2.4.0] - 2026-01-16
+
+#### Alterado
+- **Porta da API alterada** de 3000 para 18080 (padrão range 15000-35000)
+- Atualizada documentação com nova porta
+- Atualizados scripts de deploy
+
+---
 
 ### [2.3.0] - 2026-01-15
 

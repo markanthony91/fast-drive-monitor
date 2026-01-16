@@ -12,7 +12,7 @@
 param(
     [string]$Hosts = "",
     [string]$HostsFile = "",
-    [int]$Port = 3000,
+    [int]$Port = 18080,
     [switch]$UseApi,
     [switch]$CheckOnly,
     [switch]$ForceRestart

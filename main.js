@@ -13,7 +13,7 @@ let mainWindow = null;
 let tray = null;
 let apiServer = null;
 
-const SERVER_PORT = 3000;
+const SERVER_PORT = 18080;
 
 /**
  * Cria a janela principal

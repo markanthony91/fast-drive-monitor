@@ -18,7 +18,7 @@ const { UpdateManager } = require('../updateManager');
 class ApiServer {
   constructor(options = {}) {
     this.options = {
-      port: options.port || 3000,
+      port: options.port || 18080,
       host: options.host || 'localhost',
       dataDir: options.dataDir || path.join(process.cwd(), 'data'),
       ...options

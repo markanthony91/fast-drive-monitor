@@ -43,7 +43,7 @@ projeto_fast_drive/
 # Desenvolvimento (requer nix-shell para Linux)
 nix-shell                        # Entrar no ambiente
 npm install                      # Instalar dependências
-npm start                        # Servidor web (porta 3000)
+npm start                        # Servidor web (porta 18080)
 npm run electron                 # Aplicação desktop
 npm test                         # Executar testes
 
@@ -111,7 +111,7 @@ console.log('[HeadsetManager] Headset registrado:', headset.name);
 
 ## API REST
 
-Base URL: `http://localhost:3000/api`
+Base URL: `http://localhost:18080/api`
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
@@ -129,7 +129,7 @@ Base URL: `http://localhost:3000/api`
 
 ## WebSocket
 
-Conectar em: `ws://localhost:3000/ws`
+Conectar em: `ws://localhost:18080/ws`
 
 Eventos: `init`, `headsetRegistered`, `headsetUpdated`, `headsetRemoved`, `headsetStateUpdated`, `dongleConnected`, `dongleDisconnected`
 
@@ -218,7 +218,7 @@ MAJOR.MINOR.PATCH
 
 | Métrica | Valor |
 |---------|-------|
-| Versão | 2.3.0 |
+| Versão | 2.4.0 |
 | Linhas de código | ~3.800 |
 | Arquivos JS | 10 |
 | Testes | 63 |
@@ -234,6 +234,7 @@ MAJOR.MINOR.PATCH
 | 2.1.0 | 2026-01-15 | 2h | Hostname tracking |
 | 2.2.0 | 2026-01-15 | 2h | Sistema de auto-update e validação |
 | 2.3.0 | 2026-01-16 | 2h | Documentação expandida e testes |
+| 2.4.0 | 2026-01-16 | 0.5h | Alteração da porta para 18080 |
 
 ## Dicas para Claude
 
@@ -243,10 +244,11 @@ MAJOR.MINOR.PATCH
 4. **Versionar** - Incrementar versão no package.json
 5. **Documentar** - Manter README.md atualizado
 6. **Manter hostname** - Incluir em todas as respostas/dados
-7. **Estimar tempo** - Registrar horas gastas nas estatísticas
-8. **Branches** - Manter main e develop sincronizados
-9. **Ler antes de editar** - Entender contexto existente
-10. **Mínimo necessário** - Não adicionar código além do solicitado
+7. **Portas** - API usa porta 18080 (range 15000-35000)
+8. **Estimar tempo** - Registrar horas gastas nas estatísticas
+9. **Branches** - Manter main e develop sincronizados
+10. **Ler antes de editar** - Entender contexto existente
+11. **Mínimo necessário** - Não adicionar código além do solicitado
 
 ## Checklist de Entrega
 

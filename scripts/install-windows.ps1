@@ -10,7 +10,7 @@ param(
     [string]$ServiceName = "FastDriveMonitor",
     [string]$GitRepo = "https://github.com/markanthony91/fast-drive-monitor.git",
     [string]$NssmPath = "C:\nssm\nssm.exe",
-    [int]$Port = 3000
+    [int]$Port = 18080
 )
 
 # Verificar se está rodando como Admin
