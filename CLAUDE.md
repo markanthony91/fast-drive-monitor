@@ -218,7 +218,7 @@ MAJOR.MINOR.PATCH
 
 | Métrica | Valor |
 |---------|-------|
-| Versão | 2.5.0 |
+| Versão | 2.6.0 |
 | Linhas de código | ~3.800 |
 | Arquivos JS | 10 |
 | Testes | 63 |
@@ -236,6 +236,7 @@ MAJOR.MINOR.PATCH
 | 2.3.0 | 2026-01-16 | 2h | Documentação expandida e testes |
 | 2.4.0 | 2026-01-16 | 0.5h | Alteração da porta para 18080 |
 | 2.5.0 | 2026-01-16 | 0.5h | Relógio e hostname na interface |
+| 2.6.0 | 2026-01-16 | 0.5h | IP, versão, data e uptime na interface |
 
 ## Dicas para Claude
 
