@@ -85,7 +85,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .server-info {
@@ -96,18 +96,51 @@ body {
 
 .hostname {
   font-size: 0.875rem;
-  color: var(--text-secondary);
-  font-weight: 500;
+  color: var(--accent-blue);
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
+.ip {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.version {
+  font-size: 0.75rem;
+  color: var(--accent-green);
+  font-weight: 500;
+}
+
+.separator {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.datetime {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.date {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
 .clock {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 600;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   color: var(--text-primary);
   letter-spacing: 2px;
+}
+
+.uptime {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .connection-status {

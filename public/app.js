@@ -12,7 +12,7 @@ class FastDriveApp {
       availableColors: {}
     };
 
-    this.hostname = null;
+    this.serverInfo = null;
     this.apiUrl = window.location.origin;
     this.wsUrl = `ws://${window.location.host}/ws`;
 
@@ -31,21 +31,60 @@ class FastDriveApp {
   }
 
   startClock() {
-    this.updateClock();
-    setInterval(() => this.updateClock(), 1000);
+    this.updateDateTime();
+    setInterval(() => this.updateDateTime(), 1000);
   }
 
-  updateClock() {
+  updateDateTime() {
     const now = new Date();
+
+    // Horário
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
     document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+
+    // Data
+    const day = String(now.getDate()).padStart(2, '0');
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const year = now.getFullYear();
+    document.getElementById('date').textContent = `${day}/${month}/${year}`;
+
+    // Uptime
+    if (this.serverInfo && this.serverInfo.startedAt) {
+      const uptimeMs = Date.now() - this.serverInfo.startedAt;
+      document.getElementById('uptime').textContent = `Uptime: ${this.formatUptime(uptimeMs)}`;
+    }
   }
 
-  updateHostname(hostname) {
-    this.hostname = hostname;
-    document.getElementById('hostname').textContent = hostname || '---';
+  formatUptime(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) {
+      return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    } else if (hours > 0) {
+      return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
+    } else if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    } else {
+      return `${seconds}s`;
+    }
+  }
+
+  updateServerInfo(serverInfo) {
+    this.serverInfo = serverInfo;
+
+    // Hostname
+    document.getElementById('hostname').textContent = serverInfo.hostname || '---';
+
+    // IP
+    document.getElementById('ip').textContent = serverInfo.ip || '---';
+
+    // Versão
+    document.getElementById('version').textContent = serverInfo.version ? `v${serverInfo.version}` : 'v---';
   }
 
   bindElements() {
@@ -161,8 +200,8 @@ class FastDriveApp {
     switch (message.type) {
       case 'init':
         this.updateState(message.data);
-        if (message.hostname) {
-          this.updateHostname(message.hostname);
+        if (message.serverInfo) {
+          this.updateServerInfo(message.serverInfo);
         }
         break;
 

@@ -14,6 +14,23 @@ const { HeadsetManager, HEADSET_COLORS } = require('../headsetManager');
 const { JabraService } = require('../jabraService');
 const { BatteryTracker } = require('../batteryTracker');
 const { UpdateManager } = require('../updateManager');
+const packageJson = require('../../package.json');
+
+/**
+ * Obtém o IP local da máquina (primeira interface não-loopback)
+ */
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const name of Object.keys(interfaces)) {
+    for (const iface of interfaces[name]) {
+      // Ignorar loopback e IPv6
+      if (iface.family === 'IPv4' && !iface.internal) {
+        return iface.address;
+      }
+    }
+  }
+  return '127.0.0.1';
+}
 
 class ApiServer {
   constructor(options = {}) {
@@ -27,9 +44,11 @@ class ApiServer {
     // Identificação do servidor
     this.serverInfo = {
       hostname: os.hostname(),
+      ip: getLocalIP(),
       platform: os.platform(),
       arch: os.arch(),
       nodeVersion: process.version,
+      version: packageJson.version,
       startedAt: Date.now()
     };
 
