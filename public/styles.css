@@ -81,6 +81,35 @@ body {
   color: var(--text-secondary);
 }
 
+.header-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.server-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hostname {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.clock {
+  font-size: 1.75rem;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  color: var(--text-primary);
+  letter-spacing: 2px;
+}
+
 .connection-status {
   display: flex;
   align-items: center;

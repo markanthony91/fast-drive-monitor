@@ -12,6 +12,7 @@ class FastDriveApp {
       availableColors: {}
     };
 
+    this.hostname = null;
     this.apiUrl = window.location.origin;
     this.wsUrl = `ws://${window.location.host}/ws`;
 
@@ -24,8 +25,27 @@ class FastDriveApp {
   async init() {
     this.bindElements();
     this.bindEvents();
+    this.startClock();
     await this.loadInitialState();
     this.connectWebSocket();
+  }
+
+  startClock() {
+    this.updateClock();
+    setInterval(() => this.updateClock(), 1000);
+  }
+
+  updateClock() {
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
+  }
+
+  updateHostname(hostname) {
+    this.hostname = hostname;
+    document.getElementById('hostname').textContent = hostname || '---';
   }
 
   bindElements() {
@@ -141,6 +161,9 @@ class FastDriveApp {
     switch (message.type) {
       case 'init':
         this.updateState(message.data);
+        if (message.hostname) {
+          this.updateHostname(message.hostname);
+        }
         break;
 
       case 'dongleConnected':
