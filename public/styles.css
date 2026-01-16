@@ -66,8 +66,18 @@ body {
 
 .header-left {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.header-left .subtitle {
+  margin-top: -4px;
+}
+
+.date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 
 .logo {
