@@ -407,7 +407,7 @@ class HeadsetManager extends EventEmitter {
 
       // Desativar headset associado
       if (dongle.headsetId) {
-        this.headsetTurnedOff(dongle.headsetId);
+        this.headsetTurnedOff(dongle.headsetId, 'dongle_removed');
       }
     }
 
@@ -456,14 +456,22 @@ class HeadsetManager extends EventEmitter {
 
   /**
    * Registra que headset foi desligado
+   * @param {string} headsetId - ID do headset
+   * @param {string} reason - Motivo: 'normal', 'connection_lost', 'dongle_removed'
    */
-  headsetTurnedOff(headsetId) {
+  headsetTurnedOff(headsetId, reason = 'normal') {
     const activeHeadset = this.activeHeadsets.get(headsetId);
 
     if (activeHeadset) {
       this.activeHeadsets.delete(headsetId);
-      console.log(`[HeadsetManager] Headset desligado: ${activeHeadset.name}`);
-      this.emit('headsetTurnedOff', { id: headsetId, headset: activeHeadset });
+      console.log(`[HeadsetManager] Headset desligado: ${activeHeadset.name} (${reason})`);
+      this.emit('headsetTurnedOff', {
+        id: headsetId,
+        name: activeHeadset.name,
+        lastBatteryLevel: activeHeadset.batteryLevel,
+        reason,
+        headset: activeHeadset
+      });
     }
   }
 

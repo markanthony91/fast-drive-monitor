@@ -14,6 +14,7 @@ const { HeadsetManager, HEADSET_COLORS } = require('../headsetManager');
 const { JabraService } = require('../jabraService');
 const { BatteryTracker } = require('../batteryTracker');
 const { UpdateManager } = require('../updateManager');
+const { EventLogger, EVENT_TYPES } = require('../eventLogger');
 const packageJson = require('../../package.json');
 
 /**
@@ -69,9 +70,16 @@ class ApiServer {
     this.updateManager = new UpdateManager({
       autoRestart: false // Não reiniciar automaticamente
     });
+    this.eventLogger = new EventLogger({
+      dataDir: this.options.dataDir,
+      hostname: this.serverInfo.hostname
+    });
 
     // WebSocket clients
     this.wsClients = new Set();
+
+    // Track call start times for duration calculation
+    this._callStartTimes = new Map();
   }
 
   /**
@@ -85,6 +93,7 @@ class ApiServer {
     await this.headsetManager.initialize();
     await this.batteryTracker.initialize();
     await this.updateManager.initialize();
+    await this.eventLogger.initialize();
 
     // Configurar eventos
     this._setupEvents();
@@ -282,6 +291,64 @@ class ApiServer {
       }, 3000);
     });
 
+    // === Sistema de Logs ===
+
+    // Buscar logs com filtros
+    router.get('/logs', (req, res) => {
+      const options = {
+        limit: parseInt(req.query.limit) || 100,
+        offset: parseInt(req.query.offset) || 0,
+        eventType: req.query.type || null,
+        severity: req.query.severity || null,
+        headsetId: req.query.headsetId || null,
+        dongleId: req.query.dongleId || null,
+        startTime: req.query.startTime ? parseInt(req.query.startTime) : null,
+        endTime: req.query.endTime ? parseInt(req.query.endTime) : null
+      };
+
+      res.json({
+        hostname: this.serverInfo.hostname,
+        data: this.eventLogger.getLogs(options)
+      });
+    });
+
+    // Estatísticas de logs
+    router.get('/logs/stats', (req, res) => {
+      const hours = parseInt(req.query.hours) || 24;
+      res.json({
+        hostname: this.serverInfo.hostname,
+        data: this.eventLogger.getLogStats(hours)
+      });
+    });
+
+    // Histórico de conexões de dongle
+    router.get('/logs/dongles', (req, res) => {
+      const dongleId = req.query.dongleId || null;
+      const limit = parseInt(req.query.limit) || 100;
+      res.json({
+        hostname: this.serverInfo.hostname,
+        data: this.eventLogger.getDongleHistory(dongleId, limit)
+      });
+    });
+
+    // Sessões de headset
+    router.get('/logs/sessions', (req, res) => {
+      const headsetId = req.query.headsetId || null;
+      const limit = parseInt(req.query.limit) || 50;
+      res.json({
+        hostname: this.serverInfo.hostname,
+        data: this.eventLogger.getHeadsetSessions(headsetId, limit)
+      });
+    });
+
+    // Tipos de eventos disponíveis
+    router.get('/logs/types', (req, res) => {
+      res.json({
+        hostname: this.serverInfo.hostname,
+        data: EVENT_TYPES
+      });
+    });
+
     // Montar rotas
     this.app.use('/api', router);
 
@@ -347,22 +414,44 @@ class ApiServer {
     // Eventos do HeadsetManager
     this.headsetManager.on('headsetRegistered', (headset) => {
       this._broadcast('headsetRegistered', headset);
+      this.eventLogger.log(EVENT_TYPES.HEADSET_REGISTERED, {
+        headsetId: headset.id,
+        message: `Headset registrado: ${headset.name}`,
+        details: headset
+      });
     });
 
     this.headsetManager.on('headsetUpdated', (headset) => {
       this._broadcast('headsetUpdated', headset);
+      this.eventLogger.log(EVENT_TYPES.HEADSET_UPDATED, {
+        headsetId: headset.id,
+        message: `Headset atualizado: ${headset.name}`,
+        details: headset
+      });
     });
 
     this.headsetManager.on('headsetRemoved', (data) => {
       this._broadcast('headsetRemoved', data);
+      this.eventLogger.log(EVENT_TYPES.HEADSET_REMOVED, {
+        headsetId: data.id,
+        message: `Headset removido: ${data.name || data.id}`
+      });
     });
 
     this.headsetManager.on('dongleConnected', (dongle) => {
       this._broadcast('dongleConnected', dongle);
+      this.eventLogger.logDongleConnected(dongle.id, dongle.name, {
+        productId: dongle.productId
+      });
     });
 
     this.headsetManager.on('dongleDisconnected', (data) => {
       this._broadcast('dongleDisconnected', data);
+      this.eventLogger.logDongleDisconnected(
+        data.id,
+        data.dongle?.name || 'Unknown',
+        data.reason || 'unknown'
+      );
     });
 
     this.headsetManager.on('headsetTurnedOn', (headset) => {
@@ -377,10 +466,22 @@ class ApiServer {
           : null
       };
       this._broadcast('headsetTurnedOn', enrichedHeadset);
+      this.eventLogger.logHeadsetTurnedOn(
+        headset.id,
+        headset.name,
+        headset.batteryLevel,
+        { serialNumber: headset.serialNumber }
+      );
     });
 
     this.headsetManager.on('headsetTurnedOff', (data) => {
       this._broadcast('headsetTurnedOff', data);
+      this.eventLogger.logHeadsetTurnedOff(
+        data.id,
+        data.name || 'Unknown',
+        data.lastBatteryLevel,
+        data.reason || 'normal'
+      );
     });
 
     this.headsetManager.on('headsetStateUpdated', (headset) => {
@@ -405,6 +506,19 @@ class ApiServer {
         this.headsetManager.dongleConnected({
           id: data.productId?.toString() || `dongle_${Date.now()}`,
           name: data.name
+        });
+      }
+    });
+
+    this.jabraService.on('deviceRemoved', (data) => {
+      console.log('[ApiServer] Dispositivo removido:', data.name);
+
+      // Verificar se é um dongle sendo removido fisicamente
+      if (data.name && data.name.toLowerCase().includes('dongle')) {
+        const dongleId = data.productId?.toString() || 'unknown';
+        this.headsetManager.dongleDisconnected(dongleId);
+        this.eventLogger.logDongleDisconnected(dongleId, data.name, 'usb_removed', {
+          reason: 'Dongle USB removido fisicamente'
         });
       }
     });
@@ -437,7 +551,14 @@ class ApiServer {
       // Encontrar e desligar headset
       const activeHeadsets = this.headsetManager.getActiveHeadsets();
       activeHeadsets.forEach(h => {
-        this.headsetManager.headsetTurnedOff(h.id);
+        this.headsetManager.headsetTurnedOff(h.id, 'connection_lost');
+        this.eventLogger.logHeadsetTurnedOff(
+          h.id,
+          h.name,
+          h.batteryLevel,
+          'connection_lost',
+          { lastState: data.lastState }
+        );
       });
     });
 
@@ -451,6 +572,27 @@ class ApiServer {
           batteryLevel: data.current,
           isCharging: data.isCharging
         });
+
+        // Log de bateria baixa/crítica
+        if (data.current < 10 && !data.isCharging) {
+          this.eventLogger.logBatteryCritical(h.id, h.name, data.current);
+        } else if (data.current < 20 && !data.isCharging) {
+          this.eventLogger.logBatteryLow(h.id, h.name, data.current);
+        }
+      });
+    });
+
+    this.jabraService.on('chargingStarted', (data) => {
+      const activeHeadsets = this.headsetManager.getActiveHeadsets();
+      activeHeadsets.forEach(h => {
+        this.eventLogger.logChargingStarted(h.id, h.name, data.batteryLevel);
+      });
+    });
+
+    this.jabraService.on('chargingStopped', (data) => {
+      const activeHeadsets = this.headsetManager.getActiveHeadsets();
+      activeHeadsets.forEach(h => {
+        this.eventLogger.logChargingStopped(h.id, h.name, data.batteryLevel);
       });
     });
 
@@ -460,6 +602,19 @@ class ApiServer {
         this.headsetManager.updateHeadsetState(h.id, {
           isInCall: data.isInCall
         });
+
+        // Log e tracking de chamadas
+        if (data.isInCall) {
+          this._callStartTimes.set(h.id, Date.now());
+          this.eventLogger.logCallStarted(h.id, h.name);
+        } else {
+          const startTime = this._callStartTimes.get(h.id);
+          if (startTime) {
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            this.eventLogger.logCallEnded(h.id, h.name, durationSeconds);
+            this._callStartTimes.delete(h.id);
+          }
+        }
       });
       this.batteryTracker.updateCallState(data.isInCall);
     });
@@ -470,8 +625,18 @@ class ApiServer {
         this.headsetManager.updateHeadsetState(h.id, {
           isMuted: data.isMuted
         });
+        this.eventLogger.log(EVENT_TYPES.MUTE_CHANGED, {
+          headsetId: h.id,
+          message: `Mute ${data.isMuted ? 'ativado' : 'desativado'}: ${h.name}`,
+          details: { isMuted: data.isMuted }
+        });
       });
       this.batteryTracker.updateMuteState(data.isMuted);
+    });
+
+    // Eventos de erro do JabraService
+    this.jabraService.on('error', (data) => {
+      this.eventLogger.logError('JabraService', data.error, data);
     });
   }
 
@@ -495,6 +660,7 @@ class ApiServer {
     await this.jabraService.disconnect();
     await this.batteryTracker.shutdown();
     await this.headsetManager.shutdown();
+    await this.eventLogger.shutdown();
 
     console.log('[ApiServer] Finalizado');
   }

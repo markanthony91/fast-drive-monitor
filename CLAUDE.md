@@ -118,14 +118,23 @@ Base URL: `http://localhost:18080/api`
 | GET | `/api/server-info` | Info do servidor |
 | GET | `/api/state` | Estado completo |
 | GET | `/api/headsets` | Listar headsets |
+| GET | `/api/headsets/active` | Headsets ativos |
 | POST | `/api/headsets` | Criar headset |
 | PUT | `/api/headsets/:id` | Atualizar headset |
 | DELETE | `/api/headsets/:id` | Remover headset |
+| GET | `/api/dongles` | Dongles conectados |
 | GET | `/api/colors` | Cores disponíveis |
 | GET | `/api/stats` | Estatísticas |
+| GET | `/api/stats/battery-history` | Histórico de bateria |
+| GET | `/api/stats/charging-history` | Histórico de carregamento |
 | GET | `/api/update/status` | Status de updates |
-| POST | `/api/update/check` | Verificar updates |
+| GET | `/api/update/check` | Verificar updates |
 | POST | `/api/update/apply` | Aplicar update |
+| GET | `/api/logs` | Buscar logs (filtros: type, severity, headsetId, dongleId, startTime, endTime) |
+| GET | `/api/logs/stats` | Estatísticas de logs |
+| GET | `/api/logs/dongles` | Histórico de conexões de dongle |
+| GET | `/api/logs/sessions` | Sessões de headset |
+| GET | `/api/logs/types` | Tipos de eventos disponíveis |
 
 ## WebSocket
 
@@ -247,11 +256,11 @@ Este sistema é destinado para **servidores Kiosk**, onde os atendentes **não t
 
 | Métrica | Valor |
 |---------|-------|
-| Versão | 2.7.0 |
-| Linhas de código | ~4.500 |
-| Arquivos JS | 10 |
+| Versão | 2.8.0 |
+| Linhas de código | ~5.500 |
+| Arquivos JS | 11 |
 | Testes | 63 |
-| Horas estimadas | ~14h |
+| Horas estimadas | ~16h |
 | Início | 2026-01-14 |
 | Última atualização | 2026-01-16 |
 
@@ -267,6 +276,17 @@ Este sistema é destinado para **servidores Kiosk**, onde os atendentes **não t
 | 2.5.0 | 2026-01-16 | 0.5h | Relógio e hostname na interface |
 | 2.6.0 | 2026-01-16 | 0.5h | IP, versão, data e uptime na interface |
 | 2.7.0 | 2026-01-16 | 2h | Features avançadas: alertas, sparkline, temas, export |
+| 2.8.0 | 2026-01-16 | 2h | Sistema de logs completo para integração |
+
+### Features da Versão 2.8.0
+- **EventLogger** - Módulo de logs persistente em SQLite
+- **API /api/logs** - Consulta de logs com filtros (tipo, severidade, data)
+- **API /api/logs/dongles** - Histórico de conexões de dongle USB
+- **API /api/logs/sessions** - Sessões de uso do headset (duração, bateria)
+- **API /api/logs/stats** - Estatísticas agregadas de eventos
+- **Tracking de dongle** - Diferencia desconexão física vs perda de sinal
+- **Log de chamadas** - Registra início/fim de chamadas com duração
+- **Motivos de desconexão** - normal, connection_lost, dongle_removed
 
 ### Features da Versão 2.7.0
 - **Alerta de bateria baixa** - Toast e som quando bateria < 20%
