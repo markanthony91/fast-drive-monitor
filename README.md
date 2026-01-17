@@ -2,9 +2,9 @@
 
 > Sistema de monitoramento de headsets Jabra Engage 55 Mono com API REST, WebSocket e interface web.
 
-**Versão:** 2.4.0
+**Versão:** 2.8.0
 
-**Última atualização:** 2026-01-15
+**Última atualização:** 2026-01-16
 
 **Status:** Em desenvolvimento
 
@@ -65,6 +65,13 @@
 | Histórico | Persiste dados em SQLite | ✅ |
 | Interface Web | UI responsiva dark mode | ✅ |
 | Interface Electron | App desktop multiplataforma | ✅ |
+| Alerta Bateria Baixa | Toast e som quando bateria < 20% | ✅ |
+| Sparkline de Bateria | Mini gráfico do histórico de bateria | ✅ |
+| Tema Claro/Escuro | Toggle de tema com persistência | ✅ |
+| Exportar Dados | Export para JSON ou CSV | ✅ |
+| Sistema de Logs | Persistência de eventos em SQLite | ✅ |
+| Tracking de Dongle | Detecta desconexão física vs perda de sinal | ✅ |
+| Histórico de Sessões | Registra sessões de uso do headset | ✅ |
 
 ---
 
@@ -200,6 +207,16 @@ Base URL: `http://localhost:18080/api`
 | POST | `/api/update/check` | Verificar se há atualizações disponíveis |
 | POST | `/api/update/apply` | Aplicar atualização (git pull + npm install) |
 | POST | `/api/update/restart` | Reiniciar o serviço após atualização |
+
+#### Sistema de Logs (v2.8.0)
+
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| GET | `/api/logs` | Consulta logs com filtros (type, severity, headsetId, dongleId, startTime, endTime) |
+| GET | `/api/logs/stats` | Estatísticas agregadas de eventos |
+| GET | `/api/logs/dongles` | Histórico de conexões de dongle USB |
+| GET | `/api/logs/sessions` | Sessões de uso do headset (duração, bateria) |
+| GET | `/api/logs/types` | Tipos de eventos disponíveis |
 
 ---
 
@@ -492,6 +509,143 @@ Base URL: `http://localhost:18080/api`
   "updatedAt": 1705312800000,
   "restartRequired": true,
   "message": "Atualização aplicada com sucesso. Reinicie o serviço."
+}
+```
+
+### GET /api/logs
+
+**Parâmetros de Query:**
+- `limit` (default: 100) - Quantidade de registros
+- `offset` (default: 0) - Paginação
+- `type` - Tipo de evento (dongle_connected, headset_turned_on, etc.)
+- `severity` - Severidade (info, warning, error, critical)
+- `headsetId` - Filtrar por headset
+- `dongleId` - Filtrar por dongle
+- `startTime` - Timestamp inicial
+- `endTime` - Timestamp final
+
+```json
+{
+  "hostname": "pc-atendimento-01",
+  "data": [
+    {
+      "id": 145,
+      "hostname": "pc-atendimento-01",
+      "eventType": "headset_turned_on",
+      "severity": "info",
+      "timestamp": 1705312800000,
+      "headsetId": "hs_123456789",
+      "headsetName": "Headset Marcelo",
+      "dongleId": "5",
+      "message": "Headset ligado",
+      "metadata": "{\"batteryLevel\":85}"
+    },
+    {
+      "id": 144,
+      "hostname": "pc-atendimento-01",
+      "eventType": "dongle_connected",
+      "severity": "info",
+      "timestamp": 1705312750000,
+      "dongleId": "5",
+      "message": "Dongle USB conectado",
+      "metadata": "{\"dongleName\":\"Jabra Engage 55 USB Dongle\"}"
+    }
+  ]
+}
+```
+
+### GET /api/logs/stats
+
+```json
+{
+  "hostname": "pc-atendimento-01",
+  "data": {
+    "totalEvents": 1250,
+    "byType": {
+      "headset_turned_on": 145,
+      "headset_turned_off": 142,
+      "dongle_connected": 48,
+      "dongle_disconnected": 45,
+      "battery_low": 23,
+      "charging_started": 89,
+      "charging_stopped": 87
+    },
+    "bySeverity": {
+      "info": 1180,
+      "warning": 45,
+      "error": 20,
+      "critical": 5
+    },
+    "lastEvent": 1705312800000
+  }
+}
+```
+
+### GET /api/logs/dongles
+
+```json
+{
+  "hostname": "pc-atendimento-01",
+  "data": [
+    {
+      "id": 48,
+      "hostname": "pc-atendimento-01",
+      "dongleId": "5",
+      "dongleName": "Jabra Engage 55 USB Dongle",
+      "connectedAt": 1705312750000,
+      "disconnectedAt": 1705320000000,
+      "disconnectReason": "usb_removed",
+      "sessionDuration": 7250000,
+      "metadata": "{\"reason\":\"Dongle USB removido fisicamente\"}"
+    }
+  ]
+}
+```
+
+### GET /api/logs/sessions
+
+```json
+{
+  "hostname": "pc-atendimento-01",
+  "data": [
+    {
+      "id": 142,
+      "hostname": "pc-atendimento-01",
+      "headsetId": "hs_123456789",
+      "headsetName": "Headset Marcelo",
+      "startTime": 1705312800000,
+      "endTime": 1705320000000,
+      "startBattery": 85,
+      "endBattery": 45,
+      "disconnectReason": "normal",
+      "sessionDuration": 7200000,
+      "metadata": null
+    }
+  ]
+}
+```
+
+### GET /api/logs/types
+
+```json
+{
+  "hostname": "pc-atendimento-01",
+  "data": [
+    "dongle_connected",
+    "dongle_disconnected",
+    "dongle_error",
+    "headset_turned_on",
+    "headset_turned_off",
+    "battery_low",
+    "battery_critical",
+    "charging_started",
+    "charging_stopped",
+    "call_started",
+    "call_ended",
+    "mute_changed",
+    "connection_lost",
+    "connection_restored"
+  ]
 }
 ```
 
@@ -1062,6 +1216,48 @@ Localização: `data/battery_tracker.db` e `data/headsets.db`
 | duration_minutes | REAL | Duração em minutos |
 | charging_rate | REAL | Taxa %/minuto |
 
+#### event_logs (v2.8.0)
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | INTEGER | PK auto-increment |
+| hostname | TEXT | Servidor de origem |
+| event_type | TEXT | Tipo do evento (dongle_connected, headset_turned_on, etc.) |
+| severity | TEXT | info, warning, error, critical |
+| timestamp | INTEGER | Timestamp do evento |
+| headset_id | TEXT | ID do headset (opcional) |
+| headset_name | TEXT | Nome do headset (opcional) |
+| dongle_id | TEXT | ID do dongle (opcional) |
+| message | TEXT | Mensagem descritiva |
+| metadata | TEXT | JSON com dados adicionais |
+
+#### dongle_connection_history (v2.8.0)
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | INTEGER | PK auto-increment |
+| hostname | TEXT | Servidor de origem |
+| dongle_id | TEXT | ID do dongle |
+| dongle_name | TEXT | Nome do dongle |
+| connected_at | INTEGER | Timestamp conexão |
+| disconnected_at | INTEGER | Timestamp desconexão |
+| disconnect_reason | TEXT | normal, usb_removed, connection_lost, error |
+| session_duration | INTEGER | Duração em ms |
+| metadata | TEXT | JSON com dados adicionais |
+
+#### headset_sessions (v2.8.0)
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| id | INTEGER | PK auto-increment |
+| hostname | TEXT | Servidor de origem |
+| headset_id | TEXT | ID do headset |
+| headset_name | TEXT | Nome do headset |
+| start_time | INTEGER | Timestamp início |
+| end_time | INTEGER | Timestamp fim |
+| start_battery | INTEGER | % bateria início |
+| end_battery | INTEGER | % bateria fim |
+| disconnect_reason | TEXT | normal, connection_lost, dongle_removed |
+| session_duration | INTEGER | Duração em ms |
+| metadata | TEXT | JSON com dados adicionais |
+
 ---
 
 ## Arquitetura
@@ -1090,6 +1286,10 @@ Localização: `data/battery_tracker.db` e `data/headsets.db`
 │  │  │HeadsetManager│ │BatteryTracker│ │  JabraService  │   ││
 │  │  │  (SQLite)    │ │   (SQLite)   │ │  (Jabra SDK)   │   ││
 │  │  └─────────────┘ └──────────────┘ └─────────────────┘   ││
+│  │  ┌─────────────────────────────────────────────────────┐││
+│  │  │              EventLogger (v2.8.0)                    │││
+│  │  │              (SQLite - Logs persistentes)            │││
+│  │  └─────────────────────────────────────────────────────┘││
 │  └─────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────┘
                               │
@@ -1172,6 +1372,7 @@ projeto_fast_drive/
 │   │   └── server.test.js     # Testes API
 │   ├── batteryTracker.js      # Rastreamento de bateria
 │   ├── batteryTracker.test.js # Testes bateria
+│   ├── eventLogger.js         # Sistema de logs (v2.8.0)
 │   ├── headsetManager.js      # Gerenciamento de headsets
 │   ├── headsetManager.test.js # Testes headsets
 │   ├── jabraService.js        # Integração Jabra SDK
@@ -1192,16 +1393,65 @@ Este projeto foi desenvolvido com assistência de IA (Claude Code).
 
 | Recurso | Estimativa |
 |---------|------------|
-| **Sessões de desenvolvimento** | ~5 sessões |
-| **Funcionalidades implementadas** | 15+ |
+| **Sessões de desenvolvimento** | ~6 sessões |
+| **Funcionalidades implementadas** | 21+ |
 | **Testes escritos** | 79 |
-| **Endpoints API** | 15+ |
+| **Endpoints API** | 20+ |
+| **Horas estimadas** | ~16h |
 
-> **Nota:** As estatísticas de tokens e horas exatas não estão disponíveis no contexto atual, mas o projeto representa aproximadamente 20-30 horas de desenvolvimento assistido por IA ao longo de várias sessões.
+> **Nota:** O projeto foi desenvolvido ao longo de várias sessões, iniciando em 2026-01-14 até 2026-01-16.
 
 ---
 
 ## Changelog
+
+### [2.8.0] - 2026-01-16
+
+#### Adicionado
+- **EventLogger** - Módulo de logs persistente em SQLite
+- **API /api/logs** - Consulta de logs com filtros (tipo, severidade, data, headset, dongle)
+- **API /api/logs/stats** - Estatísticas agregadas de eventos
+- **API /api/logs/dongles** - Histórico de conexões de dongle USB
+- **API /api/logs/sessions** - Sessões de uso do headset (duração, bateria)
+- **API /api/logs/types** - Tipos de eventos disponíveis
+- **Tracking de dongle** - Diferencia desconexão física (usb_removed) vs perda de sinal (connection_lost)
+- **Log de chamadas** - Registra início/fim de chamadas com duração
+- **Motivos de desconexão** - normal, connection_lost, dongle_removed, usb_removed
+
+---
+
+### [2.7.0] - 2026-01-16
+
+#### Adicionado
+- **Alerta de bateria baixa** - Toast e som quando bateria < 20%
+- **Tempo estimado** - Mostra tempo restante de bateria/carga
+- **Notificação de desconexão** - Alerta quando headset desconecta
+- **Sparkline de bateria** - Mini gráfico do histórico de bateria
+- **Log de eventos** - Painel com eventos recentes (conexões, alertas)
+- **Exportar dados** - Export para JSON ou CSV
+- **Tema claro/escuro** - Toggle de tema com persistência
+- **Som de alerta** - Beep sonoro para alertas críticos
+- **Modo compacto** - Interface reduzida para telas menores
+
+---
+
+### [2.6.0] - 2026-01-16
+
+#### Adicionado
+- **IP do servidor** - Exibe IP local na interface
+- **Versão** - Exibe versão da aplicação
+- **Data de início** - Mostra quando servidor iniciou
+- **Uptime formatado** - Tempo de atividade em dias/horas/minutos
+
+---
+
+### [2.5.0] - 2026-01-16
+
+#### Adicionado
+- **Relógio** - Exibe hora atual na interface
+- **Hostname visível** - Mostra hostname do servidor na interface
+
+---
 
 ### [2.4.0] - 2026-01-16
 
