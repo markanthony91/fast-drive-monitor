@@ -502,10 +502,15 @@ class ApiServer {
     this.jabraService.on('deviceDetected', (data) => {
       console.log('[ApiServer] Dispositivo detectado:', data.name);
 
-      if (data.name && data.name.toLowerCase().includes('dongle')) {
+      // Detectar dongle: "Jabra Link 400", "Jabra Dongle", etc.
+      const nameLower = data.name?.toLowerCase() || '';
+      const isDongle = nameLower.includes('dongle') || nameLower.includes('link');
+
+      if (isDongle) {
         this.headsetManager.dongleConnected({
           id: data.productId?.toString() || `dongle_${Date.now()}`,
-          name: data.name
+          name: data.name,
+          productId: data.productId
         });
       }
     });
@@ -514,7 +519,10 @@ class ApiServer {
       console.log('[ApiServer] Dispositivo removido:', data.name);
 
       // Verificar se é um dongle sendo removido fisicamente
-      if (data.name && data.name.toLowerCase().includes('dongle')) {
+      const nameLower = data.name?.toLowerCase() || '';
+      const isDongle = nameLower.includes('dongle') || nameLower.includes('link');
+
+      if (isDongle) {
         const dongleId = data.productId?.toString() || 'unknown';
         this.headsetManager.dongleDisconnected(dongleId);
         this.eventLogger.logDongleDisconnected(dongleId, data.name, 'usb_removed', {

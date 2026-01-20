@@ -5,8 +5,7 @@
  * fornecendo eventos para mudanças de estado e informações do dispositivo.
  */
 
-const { createApi } = require('@gnaudio/jabra-js');
-const { createProperties } = require('@gnaudio/jabra-js-properties');
+const { createApi, EasyCallControlFactory, CallControlFactory } = require('@gnaudio/jabra-js');
 const { EventEmitter } = require('events');
 
 // Constantes do dispositivo
@@ -124,13 +123,12 @@ class JabraService extends EventEmitter {
   }
 
   /**
-   * Verifica se o dispositivo é um Jabra Engage 55 Mono
+   * Verifica se o dispositivo é um Jabra Engage (55, SE, ou similar)
    */
   _isEngage55Mono(device) {
-    // Verificar pelo nome ou product ID
+    // Verificar pelo nome - aceita Engage 55, Engage SE, etc.
     const nameMatch = device.name &&
-      device.name.toLowerCase().includes('engage') &&
-      device.name.toLowerCase().includes('55');
+      device.name.toLowerCase().includes('engage');
 
     return nameMatch || device.productId === JABRA_ENGAGE_55_MONO.productId;
   }
@@ -173,20 +171,34 @@ class JabraService extends EventEmitter {
    */
   async _setupCallControl(device) {
     try {
-      const { createMultiCallControl } = require('@gnaudio/jabra-js');
-      this.callControl = await createMultiCallControl(device);
+      // Tentar EasyCallControlFactory primeiro
+      if (EasyCallControlFactory) {
+        const factory = new EasyCallControlFactory(device);
+        this.callControl = await factory.create();
+        console.log('[JabraService] EasyCallControl criado com sucesso');
+      } else if (CallControlFactory) {
+        const factory = new CallControlFactory(device);
+        this.callControl = await factory.create();
+        console.log('[JabraService] CallControl criado com sucesso');
+      }
 
-      // Monitorar mudanças de estado de chamada
-      const callStateSub = this.callControl.callStateChange.subscribe(state => {
-        this._handleCallStateChange(state);
-      });
-      this._subscriptions.push(callStateSub);
+      if (this.callControl) {
+        // Monitorar mudanças de estado de chamada
+        if (this.callControl.callStateChange) {
+          const callStateSub = this.callControl.callStateChange.subscribe(state => {
+            this._handleCallStateChange(state);
+          });
+          this._subscriptions.push(callStateSub);
+        }
 
-      // Monitorar mudanças de mute
-      const muteSub = this.callControl.muteState.subscribe(muteState => {
-        this._handleMuteChange(muteState);
-      });
-      this._subscriptions.push(muteSub);
+        // Monitorar mudanças de mute
+        if (this.callControl.muteState) {
+          const muteSub = this.callControl.muteState.subscribe(muteState => {
+            this._handleMuteChange(muteState);
+          });
+          this._subscriptions.push(muteSub);
+        }
+      }
 
     } catch (error) {
       console.warn('[JabraService] Call control não disponível:', error.message);
@@ -198,25 +210,32 @@ class JabraService extends EventEmitter {
    */
   async _setupProperties(device) {
     try {
-      this.properties = await createProperties(device, MONITORED_PROPERTIES);
+      // Listar propriedades disponíveis no device para debug
+      const deviceKeys = Object.keys(device);
+      console.log('[JabraService] Device keys:', deviceKeys);
 
-      // Monitorar nível de bateria
-      const batteryProp = this.properties.get('batteryLevel');
-      if (batteryProp) {
-        const batterySub = batteryProp.valueChange.subscribe(value => {
-          this._handleBatteryChange(value);
+      // Verificar se device tem batteryStatus (Observable)
+      if (device.batteryStatus && typeof device.batteryStatus.subscribe === 'function') {
+        console.log('[JabraService] batteryStatus Observable encontrado');
+        const batterySub = device.batteryStatus.subscribe(battery => {
+          console.log('[JabraService] Battery update:', battery);
+          if (battery) {
+            const level = battery.levelPercentage ?? battery.level ?? battery;
+            if (typeof level === 'number') {
+              this._handleBatteryChange(level);
+            }
+            if (battery.isCharging !== undefined) {
+              this._handleChargingChange(battery.isCharging);
+            }
+          }
         });
         this._subscriptions.push(batterySub);
+      } else {
+        console.log('[JabraService] batteryStatus não disponível para este dispositivo');
       }
 
-      // Monitorar estado de carregamento
-      const chargingProp = this.properties.get('batteryCharging');
-      if (chargingProp) {
-        const chargingSub = chargingProp.valueChange.subscribe(value => {
-          this._handleChargingChange(value);
-        });
-        this._subscriptions.push(chargingSub);
-      }
+      // Nota: PropertyModule requer definições de propriedades específicas do dispositivo
+      // que não estão disponíveis para o Engage SE. Funcionalidade de bateria limitada.
 
     } catch (error) {
       console.warn('[JabraService] Propriedades não disponíveis:', error.message);
@@ -227,29 +246,17 @@ class JabraService extends EventEmitter {
    * Atualiza estado inicial do dispositivo
    */
   async _updateInitialState() {
-    if (!this.properties) return;
+    if (!this.device) return;
 
     try {
-      // Ler valores iniciais
-      const batteryProp = this.properties.get('batteryLevel');
-      if (batteryProp) {
-        this.deviceState.batteryLevel = await batteryProp.get();
+      // Ler serial number do device se disponível
+      if (this.device.serialNumber) {
+        this.deviceState.serialNumber = this.device.serialNumber;
+        console.log(`[JabraService] Serial: ${this.deviceState.serialNumber}`);
       }
 
-      const chargingProp = this.properties.get('batteryCharging');
-      if (chargingProp) {
-        this.deviceState.isCharging = await chargingProp.get();
-      }
-
-      const fwProp = this.properties.get('firmwareVersion');
-      if (fwProp) {
-        this.deviceState.firmwareVersion = await fwProp.get();
-      }
-
-      const serialProp = this.properties.get('serialNumber');
-      if (serialProp) {
-        this.deviceState.serialNumber = await serialProp.get();
-      }
+      // Nota: Bateria será atualizada via subscription quando disponível
+      console.log('[JabraService] Estado inicial configurado');
 
     } catch (error) {
       console.warn('[JabraService] Erro ao ler estado inicial:', error.message);
