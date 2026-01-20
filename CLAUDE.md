@@ -170,6 +170,32 @@ nix-shell  # Configura Python 3.11 automaticamente
 ### Jabra SDK sem Partner Key
 Funciona sem partner key, mas exibe warning. Para produção, obtenha em developer.jabra.com.
 
+### Permissões USB no Linux (hiddev open failed)
+Se aparecer `hiddev open failed: Permission denied` nos logs, é necessário configurar regras udev:
+
+```bash
+# Criar regras udev para Jabra
+sudo tee /etc/udev/rules.d/99-jabra.rules << 'EOF'
+# Jabra/GN Audio devices (Vendor ID: 0x0B0E)
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", MODE="0666"
+SUBSYSTEM=="usb_device", ATTR{idVendor}=="0b0e", MODE="0666"
+
+# Jabra Link 400 (dongle do Engage 55) - Product ID: 1134
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", ATTR{idProduct}=="1134", MODE="0666"
+
+# HID devices - IMPORTANTE para o SDK funcionar
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b0e", MODE="0666"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0b0e", MODE="0666"
+EOF
+
+# Aplicar regras
+sudo udevadm control --reload-rules && sudo udevadm trigger
+
+# IMPORTANTE: Desconectar e reconectar o dongle USB fisicamente
+```
+
+**Dica:** Use `lsusb | grep -i jabra` para verificar o Product ID do seu dispositivo.
+
 ## Fluxo de Trabalho Git
 
 ```bash
@@ -256,17 +282,18 @@ Este sistema é destinado para **servidores Kiosk**, onde os atendentes **não t
 
 | Métrica | Valor |
 |---------|-------|
-| Versão | 2.8.0 |
+| Versão | 2.8.1 |
 | Linhas de código | ~5.500 |
 | Arquivos JS | 11 |
 | Testes | 63 |
-| Horas estimadas | ~16h |
+| Horas estimadas | ~16.5h |
 | Início | 2026-01-14 |
-| Última atualização | 2026-01-16 |
+| Última atualização | 2026-01-20 |
 
 ### Histórico de Desenvolvimento
 | Versão | Data | Horas | Descrição |
 |--------|------|-------|-----------|
+| 2.8.1 | 2026-01-20 | 0.5h | Documentação de permissões USB Linux (udev rules) |
 | 1.0.0 | 2026-01-14 | 3h | Versão inicial - CLI Jabra Monitor |
 | 2.0.0 | 2026-01-14 | 3h | Frontend web e API REST |
 | 2.1.0 | 2026-01-15 | 2h | Hostname tracking |

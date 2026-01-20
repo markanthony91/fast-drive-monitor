@@ -2,9 +2,9 @@
 
 > Sistema de monitoramento de headsets Jabra Engage 55 Mono com API REST, WebSocket e interface web.
 
-**Versão:** 2.8.0
+**Versão:** 2.8.1
 
-**Última atualização:** 2026-01-16
+**Última atualização:** 2026-01-20
 
 **Status:** Em desenvolvimento
 
@@ -107,13 +107,32 @@ npm install
 
 ### Permissões USB (Linux)
 
+O SDK Jabra requer permissões para acessar dispositivos USB HID. Crie o arquivo de regras udev:
+
 ```bash
-sudo cp udev/99-jabra.rules /etc/udev/rules.d/
+# Criar regras udev para Jabra
+sudo tee /etc/udev/rules.d/99-jabra.rules << 'EOF'
+# Regras udev para dispositivos Jabra
+# Jabra/GN Audio devices (Vendor ID: 0x0B0E)
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", MODE="0666"
+SUBSYSTEM=="usb_device", ATTR{idVendor}=="0b0e", MODE="0666"
+
+# Jabra Link 400 (dongle do Engage 55)
+SUBSYSTEM=="usb", ATTR{idVendor}=="0b0e", ATTR{idProduct}=="1134", MODE="0666"
+
+# HID devices para controle de chamadas - IMPORTANTE para o SDK
+KERNEL=="hidraw*", ATTRS{idVendor}=="0b0e", MODE="0666"
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="0b0e", MODE="0666"
+EOF
+
+# Recarregar regras
 sudo udevadm control --reload-rules
 sudo udevadm trigger
-sudo usermod -aG plugdev $USER
-# Faça logout/login após este comando
+
+# IMPORTANTE: Desconecte e reconecte o dongle USB após executar os comandos
 ```
+
+**Nota:** Se aparecer `hiddev open failed: Permission denied` nos logs, as regras udev não foram aplicadas corretamente. Desconecte fisicamente o dongle, aguarde 2 segundos e reconecte.
 
 ---
 
@@ -1404,6 +1423,16 @@ Este projeto foi desenvolvido com assistência de IA (Claude Code).
 ---
 
 ## Changelog
+
+### [2.8.1] - 2026-01-20
+
+#### Documentação
+- **Permissões USB Linux** - Documentação completa de regras udev para Jabra
+- Adicionado Product ID `1134` do Jabra Link 400
+- Adicionadas regras para `SUBSYSTEM=="hidraw"` (necessário para o SDK)
+- Corrigido problema de `hiddev open failed: Permission denied`
+
+---
 
 ### [2.8.0] - 2026-01-16
 
