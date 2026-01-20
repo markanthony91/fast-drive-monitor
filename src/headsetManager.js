@@ -423,7 +423,19 @@ class HeadsetManager extends EventEmitter {
   headsetTurnedOn(headsetId, state = {}) {
     let headset = this.registeredHeadsets.get(headsetId);
 
-    // Se não existe, registrar automaticamente
+    // Se não encontrou por ID, tentar buscar por serialNumber
+    if (!headset && state.serialNumber) {
+      for (const [id, h] of this.registeredHeadsets) {
+        if (h.serialNumber === state.serialNumber) {
+          headset = h;
+          headsetId = id; // Usar o ID existente
+          console.log(`[HeadsetManager] Headset encontrado por serialNumber: ${h.name}`);
+          break;
+        }
+      }
+    }
+
+    // Se ainda não existe, registrar automaticamente
     if (!headset) {
       headset = this.registerHeadset({
         id: headsetId,

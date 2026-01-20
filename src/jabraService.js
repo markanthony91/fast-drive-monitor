@@ -154,9 +154,12 @@ class JabraService extends EventEmitter {
 
       this.deviceState.isPowerOn = true;
 
-      console.log(`[JabraService] Conectado ao ${device.name}`);
+      console.log(`[JabraService] Conectado ao ${device.name} (SN: ${device.serialNumber})`);
       this.emit('connected', {
         device: device.name,
+        deviceId: device.deviceId,
+        serialNumber: device.serialNumber,
+        productId: device.productId,
         state: this.deviceState
       });
 

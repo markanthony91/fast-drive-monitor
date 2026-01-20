@@ -532,12 +532,13 @@ class ApiServer {
     });
 
     this.jabraService.on('connected', (data) => {
-      console.log('[ApiServer] Headset conectado:', data.device);
+      console.log('[ApiServer] Headset conectado:', data.device, '- SN:', data.serialNumber);
 
-      const headsetId = data.state?.serialNumber || `hs_${Date.now()}`;
+      // Usar serialNumber como ID para persistência correta
+      const headsetId = data.serialNumber || `hs_${Date.now()}`;
       this.headsetManager.headsetTurnedOn(headsetId, {
         name: data.device,
-        serialNumber: data.state?.serialNumber,
+        serialNumber: data.serialNumber,
         firmwareVersion: data.state?.firmwareVersion,
         batteryLevel: data.state?.batteryLevel,
         isCharging: data.state?.isCharging,
